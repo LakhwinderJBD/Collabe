@@ -258,7 +258,9 @@ def evaluate_match_with_slots(creator, cafe):
     pref_sec = creator.get("preferred_sector", "")
     if "Any" in pref_sec or pref_sec == cafe["sector"]:
         score += 15
-    if creator.get("budget_pref") == cafe.get("deal_type"):
+    creator_deal = creator.get("budget_pref", "")
+    cafe_deal = cafe.get("deal_type", "")
+    if "Flexible" in creator_deal or "Flexible" in cafe_deal or creator_deal == cafe_deal:
         score += 10
         
     return "AVAILABLE", score, [], remaining_slots
@@ -358,6 +360,7 @@ if page in ["📝 Creator / Brand Request Form", "📝 Creator / Brand Request F
         needs_natural_light = col9.checkbox("High Natural Window Light Required?", value=True)
         
         budget_pref = st.selectbox("Compensation / Deal Preference", [
+            "Flexible / Open to Discuss",
             "Free in exchange for 1 tagged Reel", 
             "Free coffee & meal with tag", 
             "Minimum spend ₹500", 
@@ -424,6 +427,7 @@ elif page in ["☕ Café & Venue Setup", "☕ Café & Venue Setup (Public)"]:
         deal_type = st.selectbox(
             "Deal Model Offered to Creators",
             [
+                "Flexible / Open to Discuss",
                 "Free in exchange for 1 tagged Reel", 
                 "Free coffee & meal with tag", 
                 "Minimum spend ₹500", 
