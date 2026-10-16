@@ -255,7 +255,8 @@ def evaluate_match_with_slots(creator, cafe):
         return "SLOT_TAKEN", 0, ["Someone has already booked this slot!"], remaining_slots
         
     score = 75
-    if creator.get("preferred_sector") == cafe["sector"]:
+    pref_sec = creator.get("preferred_sector", "")
+    if "Any" in pref_sec or pref_sec == cafe["sector"]:
         score += 15
     if creator.get("budget_pref") == cafe.get("deal_type"):
         score += 10
@@ -341,7 +342,7 @@ if page in ["📝 Creator / Brand Request Form", "📝 Creator / Brand Request F
         description = st.text_area("Describe the shoot in one or two lines *", placeholder="e.g. Seasonal fashion lookbook shoot with 1 model")
         
         col5, col6, col7 = st.columns(3)
-        preferred_sector = col5.selectbox("Preferred Location / Sector", ["Sector 9", "Sector 8", "Sector 7", "Sector 26", "Sector 35"])
+        preferred_sector = col5.selectbox("Preferred Location / Sector", ["Any Sector (All Chandigarh)", "Sector 7", "Sector 8", "Sector 9", "Sector 10", "Sector 26", "Sector 35"])
         preferred_slot = col6.selectbox("Preferred Time Window *", [
             "Morning (8 AM - 11 AM)", 
             "Morning (8 AM - 10 AM)", 
