@@ -309,7 +309,7 @@ else:
     st.sidebar.markdown("**🔒 Collabé Team Login:**")
     pin_input = st.sidebar.text_input("Enter Admin PIN to unlock desk:", type="password", placeholder="PIN")
     if st.sidebar.button("Unlock Admin Desk"):
-        if pin_input == "7814":
+        if pin_input == "78142":
             st.session_state.is_admin = True
             st.sidebar.success("Welcome back, Lakhwinder!")
             st.rerun()
