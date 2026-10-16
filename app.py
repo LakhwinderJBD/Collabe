@@ -586,14 +586,33 @@ elif page == "⚡ Live Matching & Real-Time Booking (Admin)":
                     col_act1, col_act2, col_act3 = st.columns([1.5, 1.5, 1])
                     mgr_msg = (
                         f"Hello {cafe['name']} Management! 🎬 (via Collabé)\n\n"
-                        f"Creator {current_creator['name']} ({current_creator['handle']}) has confirmed the shoot slot on Collabé!\n"
+                        f"Great news! Creator {current_creator['name']} ({current_creator['handle']}, {current_creator['followers']} followers) has confirmed and locked the shoot slot on Collabé!\n\n"
                         f"🎟️ Booking ID: {my_booking['booking_id']}\n"
                         f"🕒 Slot: {my_booking['slot']}\n"
+                        f"👥 Crew Size: {current_creator['crew_size']} people\n"
+                        f"📸 Shoot: {current_creator['description']}\n"
+                        f"💡 Agreed Deal: {cafe['deal_type']}\n"
+                        f"📷 Gear: {'Tripod' if current_creator['needs_tripod'] else 'Phone/Handheld'}\n"
+                        f"📞 Creator Contact: +{current_creator['whatsapp']}\n\n"
+                        f"Please ensure a designated table is ready for the creator."
                     )
                     mgr_url = f"https://wa.me/{cafe['manager_phone']}?text={urllib.parse.quote(mgr_msg)}"
                     col_act1.link_button("📲 Notify Café Manager", mgr_url)
                     
-                    pass_url = f"https://wa.me/{current_creator['whatsapp']}?text={urllib.parse.quote('Booking Confirmed: ' + my_booking['booking_id'])}"
+                    creator_pass_msg = (
+                        f"🎉 OFFICIAL SHOOT PASS — Collabé 🎬\n\n"
+                        f"Hi {current_creator['name']}! Your shoot is confirmed and locked in the schedule.\n\n"
+                        f"📍 Venue: {cafe['name']}, {cafe['sector']}\n"
+                        f"🎟️ Booking Pass ID: {my_booking['booking_id']}\n"
+                        f"🕒 Confirmed Slot: {my_booking['slot']}\n"
+                        f"👥 Crew Size Allowed: Up to {cafe['max_crew']} people\n"
+                        f"💡 Agreed Deal: {cafe['deal_type']}\n"
+                        f"📷 Rules: {'Tripods Allowed ✅' if cafe['allows_tripod'] else 'No Tripods ❌'} | {'Natural Light Available ✅' if cafe['has_natural_light'] else 'Indoor Light'}\n"
+                        f"📞 Venue Manager Phone: +{cafe['manager_phone']}\n\n"
+                        f"⚡ On Arrival: Show this WhatsApp pass to the café manager or staff at the counter to access your reserved area.\n\n"
+                        f"Have a great shoot!"
+                    )
+                    pass_url = f"https://wa.me/{current_creator['whatsapp']}?text={urllib.parse.quote(creator_pass_msg)}"
                     col_act2.link_button("📲 Send Pass to Creator", pass_url)
                     
                     if col_act3.button("❌ Release Slot", key=f"cancel_{my_booking['booking_id']}"):
