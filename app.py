@@ -7,7 +7,7 @@ from datetime import datetime
 
 # Page configuration with official brand name
 st.set_page_config(
-    page_title="Collabé | Creator & Café Matching Platform",
+    page_title="Collabé | Creator & Café Match Network",
     page_icon="🎬",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -65,6 +65,14 @@ st.markdown("""
         padding: 4px 10px;
         border-radius: 6px;
         font-weight: 600;
+        font-size: 0.85rem;
+    }
+    .admin-badge {
+        background-color: #e0e7ff;
+        color: #3730a3;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-weight: 700;
         font-size: 0.85rem;
     }
 </style>
@@ -198,7 +206,7 @@ def save_data(file_path, data):
     with open(file_path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=4)
 
-# Always ensure fresh brand and creator data synced with disk
+# Keep session synced with disk
 st.session_state.cafes = load_data(CAFES_FILE, INITIAL_CAFES)
 st.session_state.creators = load_data(CREATORS_FILE, INITIAL_CREATORS)
 st.session_state.bookings = load_data(BOOKINGS_FILE, [])
@@ -224,26 +232,20 @@ def get_available_slots_for_cafe(cafe):
 def evaluate_match_with_slots(creator, cafe):
     failed_reasons = []
     
-    # 1. Hard Check: Crew Size
     if creator["crew_size"] > cafe["max_crew"]:
         failed_reasons.append(f"Crew size ({creator['crew_size']}) exceeds café limit ({cafe['max_crew']})")
     
-    # 2. Hard Check: Tripod Allowed
     if creator["needs_tripod"] and not cafe["allows_tripod"]:
         failed_reasons.append("Creator needs tripod, but café does not allow tripods")
         
-    # 3. Hard Check: Natural Light
     if creator["needs_natural_light"] and not cafe["has_natural_light"]:
         failed_reasons.append("Creator requires natural window light, which café lacks")
         
-    # 4. Check Slot: Is this slot originally offered by café?
     if creator["preferred_slot"] not in cafe["slots"]:
         failed_reasons.append(f"Café does not host shoots during requested time ({creator['preferred_slot']})")
         
-    # 5. Check Real-Time Availability: Has someone ALREADY booked this slot?
     booked_map = get_booked_slots()
     is_slot_already_taken = creator["preferred_slot"] in booked_map.get(cafe["id"], set())
-    
     remaining_slots = get_available_slots_for_cafe(cafe)
     
     if failed_reasons:
@@ -252,7 +254,6 @@ def evaluate_match_with_slots(creator, cafe):
     if is_slot_already_taken:
         return "SLOT_TAKEN", 0, ["Someone has already booked this slot!"], remaining_slots
         
-    # Score
     score = 75
     if creator.get("preferred_sector") == cafe["sector"]:
         score += 15
@@ -270,254 +271,62 @@ def generate_whatsapp_message(creator, cafe, slot):
         f"👥 Max Crew: {cafe['max_crew']} people\n"
         f"💡 Deal Model: {cafe['deal_type']}\n"
         f"📷 Tripod: {'Allowed' if cafe['allows_tripod'] else 'No'} | Light: {'Natural' if cafe['has_natural_light'] else 'Normal'}\n\n"
-        f"⚠️ Note: Slots on Collabé are locked on a first-come, first-served basis. Accept now to reserve this slot before another creator books it!"
+        f"⚠️ Note: Slots on Collabé are locked on a first-come, first-served basis. Reply YES to accept!"
     )
     encoded = urllib.parse.quote(msg)
     wa_url = f"https://wa.me/{creator['whatsapp']}?text={encoded}"
     return msg, wa_url
 
-# ----------------- SIDEBAR NAVIGATION -----------------
+# ----------------- SIDEBAR & ACCESS CONTROL (ADMIN PIN: 7814) -----------------
 st.sidebar.markdown("## 🎬 **Collabé**")
 st.sidebar.markdown("*The Creator & Café Match Network*")
 
-page = st.sidebar.radio(
-    "Navigation:",
-    [
-        "⚡ Live Matching & Real-Time Booking", 
-        "📝 Creator / Brand Request Form", 
-        "☕ Café & Venue Setup", 
-        "📊 Live Tabular Data & Slot Status"
-    ]
-)
+# Admin Authentication
+if "is_admin" not in st.session_state:
+    st.session_state.is_admin = False
 
 st.sidebar.markdown("---")
-booked_map = get_booked_slots()
-total_booked_count = sum(len(slots) for slots in booked_map.values())
-st.sidebar.info(
-    f"📊 **Collabé Live Status**\n\n"
-    f"• Registered Cafés: **{len(st.session_state.cafes)}**\n"
-    f"• Creator Briefs: **{len(st.session_state.creators)}**\n"
-    f"• Locked Slots: **{total_booked_count}**\n"
-    f"• Confirmed Bookings: **{len(st.session_state.bookings)}**"
-)
 
-# Reset demo bookings button
-if st.sidebar.button("🔄 Reset Demo Bookings"):
-    st.session_state.bookings = []
-    save_data(BOOKINGS_FILE, [])
-    st.sidebar.success("All bookings cleared! All slots are open on Collabé.")
-    st.rerun()
+# Dynamic Menu based on Admin Status
+if st.session_state.is_admin:
+    st.sidebar.markdown('<span class="admin-badge">🔓 Admin Desk Active (Lakhwinder)</span>', unsafe_allow_html=True)
+    nav_options = [
+        "⚡ Live Matching & Real-Time Booking (Admin)",
+        "📊 Live Tabular Data & Slot Status (Admin)",
+        "📝 Creator / Brand Request Form (Public)", 
+        "☕ Café & Venue Setup (Public)"
+    ]
+    if st.sidebar.button("🔒 Logout Admin"):
+        st.session_state.is_admin = False
+        st.rerun()
+else:
+    # PUBLIC VIEW: Only Registration Forms (Data & Matching are LOCKED)
+    nav_options = [
+        "📝 Creator / Brand Request Form", 
+        "☕ Café & Venue Setup",
+        "🔍 Check My Booking Status"
+    ]
+    st.sidebar.markdown("**🔒 Collabé Team Login:**")
+    pin_input = st.sidebar.text_input("Enter Admin PIN to unlock desk:", type="password", placeholder="PIN")
+    if st.sidebar.button("Unlock Admin Desk"):
+        if pin_input == "7814":
+            st.session_state.is_admin = True
+            st.sidebar.success("Welcome back, Lakhwinder!")
+            st.rerun()
+        else:
+            st.sidebar.error("Incorrect Admin PIN.")
 
-# ----------------- PAGE 1: LIVE MATCHING & BOOKING -----------------
-if page == "⚡ Live Matching & Real-Time Booking":
-    st.markdown('<div class="brand-header">Collabé</div>', unsafe_allow_html=True)
-    st.markdown('<div class="sub-header">Live matching engine connecting content creators & small brands with aesthetic venues.</div>', unsafe_allow_html=True)
-    
-    if not st.session_state.creators:
-        st.warning("No creator briefs submitted yet. Add one in the Creator Form!")
-    else:
-        st.markdown("### 1️⃣ Select Creator Profile to Match:")
-        creator_keys = {f"{c['name']} ({c['handle']}) — Wants: {c['preferred_slot']} in {c['preferred_sector']}": c for c in st.session_state.creators}
-        selected_key = st.selectbox("Choose Creator / Brand:", list(creator_keys.keys()))
-        current_creator = creator_keys[selected_key]
-        
-        with st.expander(f"📋 Shoot Brief for {current_creator['name']}", expanded=False):
-            c1, c2, c3 = st.columns(3)
-            c1.write(f"**Shoot Type:** {current_creator['shoot_type']}")
-            c1.write(f"**Crew Size:** {current_creator['crew_size']} people")
-            c2.write(f"**Preferred Slot:** `{current_creator['preferred_slot']}`")
-            c2.write(f"**Preferred Sector:** {current_creator['preferred_sector']}")
-            c3.write(f"**Needs Tripod:** {'Yes' if current_creator['needs_tripod'] else 'No'}")
-            c3.write(f"**WhatsApp:** {current_creator['whatsapp']}")
+page = st.sidebar.radio("Navigation:", nav_options)
 
-        st.markdown("---")
-        st.markdown("### 2️⃣ Live Matching & Slot Status:")
-        
-        has_any_match = False
-        
-        for cafe in st.session_state.cafes:
-            status, score, reasons, remaining_slots = evaluate_match_with_slots(current_creator, cafe)
-            
-            # CASE A: MATCHED & AVAILABLE
-            if status == "AVAILABLE":
-                has_any_match = True
-                st.markdown(f"""
-                <div class="match-card">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <h3 style="margin: 0; color: #03543f;">🟢 {cafe['name']} — {cafe['sector']}</h3>
-                        <span class="badge-success">Slot Available & Ready to Book! (Score: {score}/100)</span>
-                    </div>
-                    <p style="margin-top: 8px; margin-bottom: 5px;">
-                        <b>Requested Slot:</b> <code>{current_creator['preferred_slot']}</code> (AVAILABLE ✅) &nbsp;|&nbsp;
-                        <b>Max Crew:</b> {cafe['max_crew']} &nbsp;|&nbsp; 
-                        <b>Deal:</b> {cafe['deal_type']}
-                    </p>
-                    <p style="margin-bottom: 0px; color: #555;">
-                        <b>Other Open Slots at this Café:</b> {', '.join(remaining_slots) if remaining_slots else 'Only this slot'}
-                    </p>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                col_btn1, col_btn2, col_btn3 = st.columns([1.5, 1.5, 3])
-                
-                # Real-Time Accept Booking Button
-                btn_key = f"book_{current_creator['id']}_{cafe['id']}"
-                if col_btn1.button(f"🤝 Accept & Lock Slot ({cafe['name']})", key=btn_key):
-                    booked_map = get_booked_slots()
-                    if current_creator['preferred_slot'] in booked_map.get(cafe['id'], set()):
-                        st.error(f"❌ Someone just booked this slot a moment ago! Slot '{current_creator['preferred_slot']}' is no longer available.")
-                    else:
-                        booking_record = {
-                            "booking_id": f"CLB_{datetime.now().strftime('%m%d_%H%M%S')}",
-                            "creator_id": current_creator["id"],
-                            "creator_name": current_creator["name"],
-                            "creator_handle": current_creator["handle"],
-                            "creator_phone": current_creator["whatsapp"],
-                            "cafe_id": cafe["id"],
-                            "cafe_name": cafe["name"],
-                            "sector": cafe["sector"],
-                            "slot": current_creator["preferred_slot"],
-                            "deal": cafe["deal_type"],
-                            "confirmed_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
-                            "status": "Confirmed & Locked on Collabé 🔒"
-                        }
-                        st.session_state.bookings.append(booking_record)
-                        save_data(BOOKINGS_FILE, st.session_state.bookings)
-                        st.toast(f"Slot Locked on Collabé for {current_creator['name']} at {cafe['name']}!", icon="🎉")
-                        st.rerun()
-                        
-                # WhatsApp dispatch link
-                msg_text, wa_url = generate_whatsapp_message(current_creator, cafe, current_creator['preferred_slot'])
-                col_btn2.link_button("📲 Send WhatsApp Alert", wa_url)
-                
-                with col_btn3.expander("Preview WhatsApp Notification"):
-                    st.code(msg_text, language="text")
-
-            # CASE B: SLOT BOOKED
-            elif status == "SLOT_TAKEN":
-                has_any_match = True
-                booked_by = [b for b in st.session_state.bookings if b.get("cafe_id") == cafe["id"] and b.get("slot") == current_creator["preferred_slot"]]
-                my_booking = next((b for b in booked_by if b.get("creator_id") == current_creator["id"]), None)
-                
-                # B.1: THIS CREATOR THEMSELVES BOOKED THIS SLOT!
-                if my_booking:
-                    st.balloons()
-                    st.markdown(f"""
-                    <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border-radius: 12px; padding: 22px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <h2 style="margin: 0; color: white;">🎟️ Shoot Booking Confirmed & Locked!</h2>
-                            <span style="background: white; color: #065f46; padding: 6px 14px; border-radius: 20px; font-weight: 700; font-size: 0.9rem;">
-                                Pass ID: {my_booking['booking_id']}
-                            </span>
-                        </div>
-                        <p style="font-size: 1.1rem; margin-top: 10px; margin-bottom: 5px;">
-                            <b>Venue:</b> {cafe['name']} ({cafe['sector']}) &nbsp;|&nbsp; 
-                            <b>Slot:</b> {my_booking['slot']} &nbsp;|&nbsp; 
-                            <b>Deal:</b> {cafe['deal_type']}
-                        </p>
-                        <p style="margin: 0; font-size: 0.95rem; opacity: 0.95;">
-                            👤 <b>Creator:</b> {current_creator['name']} ({current_creator['handle']}) &nbsp;|&nbsp; 
-                            📞 <b>Manager Contact:</b> +{cafe['manager_phone']}
-                        </p>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-                    # Action buttons for confirmed booking
-                    col_act1, col_act2, col_act3 = st.columns([1.5, 1.5, 1])
-                    
-                    # 1. WhatsApp to Cafe Manager
-                    mgr_msg = (
-                        f"Hello {cafe['name']} Management! 🎬 (via Collabé)\n\n"
-                        f"Great news! Creator {current_creator['name']} ({current_creator['handle']}, {current_creator['followers']} followers) has confirmed and locked the shoot slot on Collabé!\n\n"
-                        f"🎟️ Booking ID: {my_booking['booking_id']}\n"
-                        f"🕒 Slot: {my_booking['slot']}\n"
-                        f"👥 Crew Size: {current_creator['crew_size']} people\n"
-                        f"📸 Shoot: {current_creator['shoot_type']}\n"
-                        f"💡 Agreed Deal: {cafe['deal_type']}\n\n"
-                        f"Please ensure a designated table is ready for the creator."
-                    )
-                    mgr_url = f"https://wa.me/{cafe['manager_phone']}?text={urllib.parse.quote(mgr_msg)}"
-                    col_act1.link_button("📲 Notify Café Manager on WhatsApp", mgr_url)
-                    
-                    # 2. WhatsApp pass to Creator
-                    pass_msg = (
-                        f"🎉 Collabé Official Shoot Pass!\n\n"
-                        f"Booking ID: {my_booking['booking_id']}\n"
-                        f"Creator: {current_creator['name']} ({current_creator['handle']})\n"
-                        f"Venue: {cafe['name']}, {cafe['sector']}\n"
-                        f"Slot: {my_booking['slot']}\n"
-                        f"Deal: {cafe['deal_type']}\n\n"
-                        f"Please show this pass upon arrival at the café."
-                    )
-                    pass_url = f"https://wa.me/{current_creator['whatsapp']}?text={urllib.parse.quote(pass_msg)}"
-                    col_act2.link_button("📲 Send Pass to Creator WhatsApp", pass_url)
-                    
-                    # 3. Cancel / Release Slot Button (for testing)
-                    if col_act3.button("❌ Release Slot", key=f"cancel_{my_booking['booking_id']}"):
-                        st.session_state.bookings = [b for b in st.session_state.bookings if b["booking_id"] != my_booking["booking_id"]]
-                        save_data(BOOKINGS_FILE, st.session_state.bookings)
-                        st.toast("Booking cancelled. Slot has been reopened!", icon="🔄")
-                        st.rerun()
-
-                # B.2: BOOKED BY ANOTHER CREATOR
-                else:
-                    other_creator_name = booked_by[0]['creator_name'] if booked_by else "another creator"
-                    st.markdown(f"""
-                    <div class="slot-taken-card">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <h3 style="margin: 0; color: #9b1c1c;">🔴 {cafe['name']} — {cafe['sector']}</h3>
-                            <span class="badge-danger">Slot Already Booked by {other_creator_name}</span>
-                        </div>
-                        <p style="margin-top: 8px; margin-bottom: 5px; color: #771d1d;">
-                            <b>Requested Slot:</b> <code>{current_creator['preferred_slot']}</code> is <b>UNAVAILABLE ❌</b> because {other_creator_name} accepted and locked it first.
-                        </p>
-                        <p style="margin-bottom: 0px;">
-                            <b>Good News:</b> This café still has other open slots: <b>{', '.join(remaining_slots) if remaining_slots else 'None left'}</b>
-                        </p>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-                    if remaining_slots:
-                        st.markdown("**👉 Book an alternative available slot at this café instead:**")
-                        col_alt1, col_alt2 = st.columns([2, 1])
-                        alt_slot = col_alt1.selectbox(f"Choose other open slot at {cafe['name']}:", remaining_slots, key=f"alt_select_{cafe['id']}")
-                        if col_alt2.button(f"Book '{alt_slot}'", key=f"btn_alt_{cafe['id']}"):
-                            booking_record = {
-                                "booking_id": f"CLB_{datetime.now().strftime('%m%d_%H%M%S')}",
-                                "creator_id": current_creator["id"],
-                                "creator_name": current_creator["name"],
-                                "creator_handle": current_creator["handle"],
-                                "creator_phone": current_creator["whatsapp"],
-                                "cafe_id": cafe["id"],
-                                "cafe_name": cafe["name"],
-                                "sector": cafe["sector"],
-                                "slot": alt_slot,
-                                "deal": cafe["deal_type"],
-                                "confirmed_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
-                                "status": "Confirmed & Locked on Collabé 🔒"
-                            }
-                            st.session_state.bookings.append(booking_record)
-                            save_data(BOOKINGS_FILE, st.session_state.bookings)
-                            st.toast(f"Booked alternate slot '{alt_slot}' at {cafe['name']} on Collabé!", icon="🎉")
-                            st.rerun()
-
-        if not has_any_match:
-            st.markdown("""
-            <div class="no-match-card">
-                <h3 style="color: #856404; margin-top: 0;">⚠️ No Available Match for This Creator</h3>
-                <p>None of the registered cafés meet the creator's rules (crew size, equipment, or slot availability).</p>
-            </div>
-            """, unsafe_allow_html=True)
-
-# ----------------- PAGE 2: CREATOR FORM -----------------
-elif page == "📝 Creator / Brand Request Form":
+# ----------------- PAGE: CREATOR PUBLIC FORM -----------------
+if page in ["📝 Creator / Brand Request Form", "📝 Creator / Brand Request Form (Public)"]:
     st.markdown('<div class="brand-header">Collabé</div>', unsafe_allow_html=True)
     st.markdown('<div class="sub-header">Creator & Small Brand Shoot Brief Registration</div>', unsafe_allow_html=True)
     
     with st.form("creator_form"):
         col1, col2 = st.columns(2)
-        name = col1.text_input("Creator / Brand Name *", placeholder="e.g. Aarav Mehra")
-        handle = col2.text_input("Instagram Handle *", placeholder="e.g. @aarav_shoots")
+        name = col1.text_input("Creator / Brand Name *", placeholder="e.g. RajKaran")
+        handle = col2.text_input("Instagram Handle *", placeholder="e.g. @rajkaran_shoots")
         
         col3, col4 = st.columns(2)
         followers = col3.selectbox("Follower Range *", ["Under 1K", "1K – 5K", "5K – 10K", "10K – 50K", "50K+"])
@@ -577,10 +386,10 @@ elif page == "📝 Creator / Brand Request Form":
                 }
                 st.session_state.creators.append(new_creator)
                 save_data(CREATORS_FILE, st.session_state.creators)
-                st.success("🎉 Shoot brief submitted to Collabé! Go to '⚡ Live Matching' to test.")
+                st.success("🎉 Shoot brief submitted to Collabé! Our matching engine is reviewing your request. You will receive matching café options directly on your WhatsApp.")
 
-# ----------------- PAGE 3: CAFÉ FORM -----------------
-elif page == "☕ Café & Venue Setup":
+# ----------------- PAGE: CAFÉ PUBLIC FORM -----------------
+elif page in ["☕ Café & Venue Setup", "☕ Café & Venue Setup (Public)"]:
     st.markdown('<div class="brand-header">Collabé</div>', unsafe_allow_html=True)
     st.markdown('<div class="sub-header">Café & Restaurant Venue Registration</div>', unsafe_allow_html=True)
     
@@ -638,25 +447,180 @@ elif page == "☕ Café & Venue Setup":
                 }
                 st.session_state.cafes.append(new_cafe)
                 save_data(CAFES_FILE, st.session_state.cafes)
-                st.success(f"🎉 {cafe_name} added to Collabé!")
+                st.success(f"🎉 {cafe_name} successfully registered on Collabé! We will send you verified creator shoot requests for your quiet hours.")
 
-# ----------------- PAGE 4: TABULAR DATA & BOOKINGS -----------------
-elif page == "📊 Live Tabular Data & Slot Status":
+# ----------------- PAGE: CHECK MY BOOKING STATUS (PUBLIC) -----------------
+elif page == "🔍 Check My Booking Status":
     st.markdown('<div class="brand-header">Collabé</div>', unsafe_allow_html=True)
-    st.markdown('<div class="sub-header">Live Tabular Data & Real-Time Slot Status</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sub-header">Check Your Confirmed Shoot Pass</div>', unsafe_allow_html=True)
+    
+    phone_search = st.text_input("Enter your WhatsApp Phone Number to check your pass:", placeholder="e.g. 917814259209")
+    if phone_search:
+        user_bookings = [b for b in st.session_state.bookings if b.get("creator_phone") == phone_search]
+        if user_bookings:
+            for b in user_bookings:
+                st.markdown(f"""
+                <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border-radius: 12px; padding: 20px; margin-bottom: 15px;">
+                    <h3 style="margin: 0; color: white;">🎟️ Official Shoot Pass: {b['booking_id']}</h3>
+                    <p style="margin-top: 8px; margin-bottom: 4px;"><b>Venue:</b> {b['cafe_name']} ({b['sector']})</p>
+                    <p style="margin-bottom: 4px;"><b>Slot:</b> {b['slot']} | <b>Deal:</b> {b['deal']}</p>
+                    <p style="margin-bottom: 0px;"><b>Status:</b> Confirmed & Locked ✅</p>
+                </div>
+                """, unsafe_allow_html=True)
+        else:
+            st.info("No active bookings found for this number yet. Once a match is confirmed, your pass will appear here.")
+
+# ----------------- ADMIN PAGE: LIVE MATCHING & REAL-TIME BOOKING -----------------
+elif page == "⚡ Live Matching & Real-Time Booking (Admin)":
+    st.markdown('<div class="brand-header">Collabé — Admin Desk</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sub-header">Live Matching Algorithm, Slot Locks & WhatsApp Dispatch Desk</div>', unsafe_allow_html=True)
+    
+    if not st.session_state.creators:
+        st.warning("No creator briefs submitted yet.")
+    else:
+        st.markdown("### 1️⃣ Select Creator Profile to Match:")
+        creator_keys = {f"{c['name']} ({c['handle']}) — Wants: {c['preferred_slot']} in {c['preferred_sector']}": c for c in st.session_state.creators}
+        selected_key = st.selectbox("Choose Creator / Brand:", list(creator_keys.keys()))
+        current_creator = creator_keys[selected_key]
+        
+        with st.expander(f"📋 Shoot Brief for {current_creator['name']}", expanded=False):
+            c1, c2, c3 = st.columns(3)
+            c1.write(f"**Shoot Type:** {current_creator['shoot_type']}")
+            c1.write(f"**Crew Size:** {current_creator['crew_size']} people")
+            c2.write(f"**Preferred Slot:** `{current_creator['preferred_slot']}`")
+            c2.write(f"**Preferred Sector:** {current_creator['preferred_sector']}")
+            c3.write(f"**Needs Tripod:** {'Yes' if current_creator['needs_tripod'] else 'No'}")
+            c3.write(f"**WhatsApp:** {current_creator['whatsapp']}")
+
+        st.markdown("---")
+        st.markdown("### 2️⃣ Live Matching & Slot Status:")
+        
+        has_any_match = False
+        
+        for cafe in st.session_state.cafes:
+            status, score, reasons, remaining_slots = evaluate_match_with_slots(current_creator, cafe)
+            
+            # CASE A: AVAILABLE
+            if status == "AVAILABLE":
+                has_any_match = True
+                st.markdown(f"""
+                <div class="match-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h3 style="margin: 0; color: #03543f;">🟢 {cafe['name']} — {cafe['sector']}</h3>
+                        <span class="badge-success">Slot Available & Ready to Book! (Score: {score}/100)</span>
+                    </div>
+                    <p style="margin-top: 8px; margin-bottom: 5px;">
+                        <b>Requested Slot:</b> <code>{current_creator['preferred_slot']}</code> (AVAILABLE ✅) &nbsp;|&nbsp;
+                        <b>Max Crew:</b> {cafe['max_crew']} &nbsp;|&nbsp; 
+                        <b>Deal:</b> {cafe['deal_type']}
+                    </p>
+                    <p style="margin-bottom: 0px; color: #555;">
+                        <b>Other Open Slots at this Café:</b> {', '.join(remaining_slots) if remaining_slots else 'Only this slot'}
+                    </p>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                col_btn1, col_btn2, col_btn3 = st.columns([1.5, 1.5, 3])
+                
+                btn_key = f"book_{current_creator['id']}_{cafe['id']}"
+                if col_btn1.button(f"🤝 Accept & Lock Slot ({cafe['name']})", key=btn_key):
+                    booked_map = get_booked_slots()
+                    if current_creator['preferred_slot'] in booked_map.get(cafe['id'], set()):
+                        st.error(f"❌ Someone just booked this slot a moment ago! Slot '{current_creator['preferred_slot']}' is no longer available.")
+                    else:
+                        booking_record = {
+                            "booking_id": f"CLB_{datetime.now().strftime('%m%d_%H%M%S')}",
+                            "creator_id": current_creator["id"],
+                            "creator_name": current_creator["name"],
+                            "creator_handle": current_creator["handle"],
+                            "creator_phone": current_creator["whatsapp"],
+                            "cafe_id": cafe["id"],
+                            "cafe_name": cafe["name"],
+                            "sector": cafe["sector"],
+                            "slot": current_creator["preferred_slot"],
+                            "deal": cafe["deal_type"],
+                            "confirmed_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                            "status": "Confirmed & Locked on Collabé 🔒"
+                        }
+                        st.session_state.bookings.append(booking_record)
+                        save_data(BOOKINGS_FILE, st.session_state.bookings)
+                        st.toast(f"Slot Locked on Collabé for {current_creator['name']} at {cafe['name']}!", icon="🎉")
+                        st.rerun()
+                        
+                msg_text, wa_url = generate_whatsapp_message(current_creator, cafe, current_creator['preferred_slot'])
+                col_btn2.link_button("📲 Send WhatsApp Alert", wa_url)
+                
+                with col_btn3.expander("Preview WhatsApp Notification"):
+                    st.code(msg_text, language="text")
+
+            # CASE B: SLOT BOOKED
+            elif status == "SLOT_TAKEN":
+                has_any_match = True
+                booked_by = [b for b in st.session_state.bookings if b.get("cafe_id") == cafe["id"] and b.get("slot") == current_creator["preferred_slot"]]
+                my_booking = next((b for b in booked_by if b.get("creator_id") == current_creator["id"]), None)
+                
+                if my_booking:
+                    st.balloons()
+                    st.markdown(f"""
+                    <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border-radius: 12px; padding: 22px; margin-bottom: 20px;">
+                        <h2 style="margin: 0; color: white;">🎟️ Shoot Booking Confirmed & Locked!</h2>
+                        <span style="background: white; color: #065f46; padding: 6px 14px; border-radius: 20px; font-weight: 700;">
+                            Pass ID: {my_booking['booking_id']}
+                        </span>
+                        <p style="font-size: 1.1rem; margin-top: 10px; margin-bottom: 5px;">
+                            <b>Venue:</b> {cafe['name']} ({cafe['sector']}) | <b>Slot:</b> {my_booking['slot']}
+                        </p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    col_act1, col_act2, col_act3 = st.columns([1.5, 1.5, 1])
+                    mgr_msg = (
+                        f"Hello {cafe['name']} Management! 🎬 (via Collabé)\n\n"
+                        f"Creator {current_creator['name']} ({current_creator['handle']}) has confirmed the shoot slot on Collabé!\n"
+                        f"🎟️ Booking ID: {my_booking['booking_id']}\n"
+                        f"🕒 Slot: {my_booking['slot']}\n"
+                    )
+                    mgr_url = f"https://wa.me/{cafe['manager_phone']}?text={urllib.parse.quote(mgr_msg)}"
+                    col_act1.link_button("📲 Notify Café Manager", mgr_url)
+                    
+                    pass_url = f"https://wa.me/{current_creator['whatsapp']}?text={urllib.parse.quote('Booking Confirmed: ' + my_booking['booking_id'])}"
+                    col_act2.link_button("📲 Send Pass to Creator", pass_url)
+                    
+                    if col_act3.button("❌ Release Slot", key=f"cancel_{my_booking['booking_id']}"):
+                        st.session_state.bookings = [b for b in st.session_state.bookings if b["booking_id"] != my_booking["booking_id"]]
+                        save_data(BOOKINGS_FILE, st.session_state.bookings)
+                        st.toast("Slot reopened!", icon="🔄")
+                        st.rerun()
+
+                else:
+                    other_creator_name = booked_by[0]['creator_name'] if booked_by else "another creator"
+                    st.markdown(f"""
+                    <div class="slot-taken-card">
+                        <h3 style="margin: 0; color: #9b1c1c;">🔴 {cafe['name']} — {cafe['sector']}</h3>
+                        <p style="color: #771d1d; margin-top: 5px;">
+                            Slot <code>{current_creator['preferred_slot']}</code> is <b>UNAVAILABLE ❌</b> because {other_creator_name} booked it first.
+                        </p>
+                        <p><b>Other open slots:</b> {', '.join(remaining_slots) if remaining_slots else 'None left'}</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+# ----------------- ADMIN PAGE: LIVE TABULAR DATA -----------------
+elif page == "📊 Live Tabular Data & Slot Status (Admin)":
+    st.markdown('<div class="brand-header">Collabé — Database Admin</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sub-header">Internal Data Tables & Real-Time Slot Inventory</div>', unsafe_allow_html=True)
     
     tab1, tab2, tab3 = st.tabs(["🤝 Confirmed Bookings", "☕ Cafés & Slot Inventory", "📝 Creator Briefs"])
     
     with tab1:
-        st.markdown(f"**Total Confirmed Bookings on Collabé:** {len(st.session_state.bookings)}")
+        st.markdown(f"**Total Confirmed Bookings:** {len(st.session_state.bookings)}")
         if st.session_state.bookings:
             df_b = pd.DataFrame(st.session_state.bookings)
             st.dataframe(df_b, width='stretch')
         else:
-            st.info("No bookings yet. Accept a booking on the Live Matching page to see it recorded here.")
+            st.info("No bookings confirmed yet.")
             
     with tab2:
-        st.markdown("**Real-Time Slot Availability per Café:**")
+        st.markdown("**Slot Inventory per Café:**")
         cafe_status_list = []
         booked_map = get_booked_slots()
         for c in st.session_state.cafes:
@@ -666,10 +630,10 @@ elif page == "📊 Live Tabular Data & Slot Status":
                 "Café Name": c["name"],
                 "Sector": c["sector"],
                 "All Slots": ", ".join(c["slots"]),
-                "Booked / Locked Slots": ", ".join(b_slots) if b_slots else "None (All Open)",
-                "Available Open Slots": ", ".join(avail_slots) if avail_slots else "Fully Booked ❌",
+                "Booked Slots": ", ".join(b_slots) if b_slots else "None (Open)",
+                "Available Slots": ", ".join(avail_slots) if avail_slots else "Fully Booked ❌",
                 "Max Crew": c["max_crew"],
-                "Tripods Allowed": "Yes" if c["allows_tripod"] else "No"
+                "Manager Phone": c["manager_phone"]
             })
         st.dataframe(pd.DataFrame(cafe_status_list), width='stretch')
         
