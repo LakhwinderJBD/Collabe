@@ -260,7 +260,9 @@ def evaluate_match_with_slots(creator, cafe):
         score += 15
     creator_deal = creator.get("budget_pref", "")
     cafe_deal = cafe.get("deal_type", "")
-    if "Flexible" in creator_deal or "Flexible" in cafe_deal or creator_deal == cafe_deal:
+    if "Any" in creator_deal or "Any" in cafe_deal or creator_deal == cafe_deal:
+        score += 10
+    elif "Discussion" in creator_deal and "Discussion" in cafe_deal:
         score += 10
         
     return "AVAILABLE", score, [], remaining_slots
@@ -360,11 +362,12 @@ if page in ["📝 Creator / Brand Request Form", "📝 Creator / Brand Request F
         needs_natural_light = col9.checkbox("High Natural Window Light Required?", value=True)
         
         budget_pref = st.selectbox("Compensation / Deal Preference", [
-            "Flexible / Open to Discuss",
+            "Any (Flexible with all standard deals)",
             "Free in exchange for 1 tagged Reel", 
             "Free coffee & meal with tag", 
             "Minimum spend ₹500", 
-            "Hourly fee ₹800/hr"
+            "Hourly fee ₹800/hr",
+            "Open to Discussion"
         ])
         
         submitted = st.form_submit_button("🚀 Submit Shoot Brief to Collabé")
@@ -427,11 +430,12 @@ elif page in ["☕ Café & Venue Setup", "☕ Café & Venue Setup (Public)"]:
         deal_type = st.selectbox(
             "Deal Model Offered to Creators",
             [
-                "Flexible / Open to Discuss",
+                "Any (Flexible with all standard deals)",
                 "Free in exchange for 1 tagged Reel", 
                 "Free coffee & meal with tag", 
                 "Minimum spend ₹500", 
-                "Hourly fee ₹800/hr"
+                "Hourly fee ₹800/hr",
+                "Open to Discussion"
             ]
         )
         
