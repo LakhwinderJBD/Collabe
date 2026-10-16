@@ -1,0 +1,50 @@
+[
+    {
+        "id": "cafe_1",
+        "name": "The Willow Café",
+        "sector": "Sector 9",
+        "slots": ["Morning (8 AM - 11 AM)", "Afternoon (3 PM - 5 PM)"],
+        "max_crew": 4,
+        "allows_tripod": true,
+        "has_natural_light": true,
+        "allowed_shoots": ["Food & Beverage", "Fashion & Lifestyle", "UGC / Brand Content"],
+        "deal_type": "Free in exchange for 1 tagged Reel",
+        "manager_phone": "917814259209"
+    },
+    {
+        "id": "cafe_2",
+        "name": "Blue Tokai Coffee Roasters",
+        "sector": "Sector 8",
+        "slots": ["Morning (8 AM - 10 AM)", "Afternoon (3 PM - 5 PM)", "Evening (5 PM - 7 PM)"],
+        "max_crew": 3,
+        "allows_tripod": true,
+        "has_natural_light": true,
+        "allowed_shoots": ["Food & Beverage", "UGC / Brand Content", "Product Shoot"],
+        "deal_type": "Minimum spend ₹500",
+        "manager_phone": "917814259209"
+    },
+    {
+        "id": "cafe_3",
+        "name": "Backpacker's Café",
+        "sector": "Sector 9",
+        "slots": ["Morning (8 AM - 10 AM)"],
+        "max_crew": 2,
+        "allows_tripod": false,
+        "has_natural_light": false,
+        "allowed_shoots": ["Food & Beverage", "Lifestyle"],
+        "deal_type": "Free coffee & meal with tag",
+        "manager_phone": "917814259209"
+    },
+    {
+        "id": "cafe_4",
+        "name": "Sector 7 Social",
+        "sector": "Sector 7",
+        "slots": ["Morning (10 AM - 1 PM)", "Afternoon (2 PM - 5 PM)"],
+        "max_crew": 6,
+        "allows_tripod": true,
+        "has_natural_light": true,
+        "allowed_shoots": ["Fashion & Lifestyle", "Music / Commercial", "Product Shoot"],
+        "deal_type": "Hourly fee ₹800/hr",
+        "manager_phone": "917814259209"
+    }
+]

@@ -1,0 +1,16 @@
+[
+    {
+        "booking_id": "CLB_1016_232215",
+        "creator_id": "creator_1",
+        "creator_name": "RajKaran",
+        "creator_handle": "@rajkaran_shoots",
+        "creator_phone": "919814123456",
+        "cafe_id": "cafe_1",
+        "cafe_name": "The Willow Caf\u00e9",
+        "sector": "Sector 9",
+        "slot": "Morning (8 AM - 11 AM)",
+        "deal": "Free in exchange for 1 tagged Reel",
+        "confirmed_at": "2026-10-16 23:22",
+        "status": "Confirmed & Locked on Collab\u00e9 \ud83d\udd12"
+    }
+]

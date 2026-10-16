@@ -1,0 +1,53 @@
+[
+    {
+        "id": "creator_1",
+        "name": "RajKaran",
+        "handle": "@rajkaran_shoots",
+        "followers": "22K",
+        "whatsapp": "917814259209",
+        "shoot_type": "Fashion & Lifestyle",
+        "description": "Shooting seasonal lookbook reels with clothing brand",
+        "preferred_sector": "Sector 9",
+        "preferred_slot": "Morning (8 AM - 11 AM)",
+        "crew_size": 3,
+        "needs_tripod": true,
+        "needs_natural_light": true,
+        "budget_pref": "Free in exchange for 1 tagged Reel",
+        "status": "Pending",
+        "timestamp": "2026-10-16 10:30"
+    },
+    {
+        "id": "creator_2",
+        "name": "Raman",
+        "handle": "@raman_visuals",
+        "followers": "35K",
+        "whatsapp": "917814259209",
+        "shoot_type": "Fashion & Lifestyle",
+        "description": "Footwear brand promo with 1 model",
+        "preferred_sector": "Sector 9",
+        "preferred_slot": "Morning (8 AM - 11 AM)",
+        "crew_size": 3,
+        "needs_tripod": true,
+        "needs_natural_light": true,
+        "budget_pref": "Free in exchange for 1 tagged Reel",
+        "status": "Pending",
+        "timestamp": "2026-10-16 10:35"
+    },
+    {
+        "id": "creator_3",
+        "name": "Deepak",
+        "handle": "@deepak_creates",
+        "followers": "45K",
+        "whatsapp": "917814259209",
+        "shoot_type": "Food & Beverage",
+        "description": "Specialty coffee review and café aesthetic reel",
+        "preferred_sector": "Sector 9",
+        "preferred_slot": "Afternoon (3 PM - 5 PM)",
+        "crew_size": 2,
+        "needs_tripod": true,
+        "needs_natural_light": true,
+        "budget_pref": "Free in exchange for 1 tagged Reel",
+        "status": "Pending",
+        "timestamp": "2026-10-16 11:15"
+    }
+]
