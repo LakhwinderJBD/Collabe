@@ -75,8 +75,108 @@ st.markdown("""
         font-weight: 700;
         font-size: 0.85rem;
     }
+    .hour-chip {
+        display: inline-block;
+        background: #eef2ff;
+        color: #3730a3;
+        padding: 2px 8px;
+        border-radius: 4px;
+        margin: 2px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+    .hour-chip-free {
+        display: inline-block;
+        background: #ecfdf5;
+        color: #065f46;
+        padding: 2px 8px;
+        border-radius: 4px;
+        margin: 2px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+    .hour-chip-busy {
+        display: inline-block;
+        background: #fef2f2;
+        color: #991b1b;
+        padding: 2px 8px;
+        border-radius: 4px;
+        margin: 2px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-decoration: line-through;
+    }
 </style>
 """, unsafe_allow_html=True)
+
+# ----------------- DEAD-HOUR WINDOW DEFINITIONS & ATOMIC HOURLY BLOCKS -----------------
+WINDOW_OPTIONS = [
+    "Morning Window: 08:00 AM to 12:00 PM",
+    "Afternoon Window: 03:00 PM to 06:00 PM",
+    "Early Morning: 07:00 AM to 09:00 AM",
+    "Late Evening: 08:00 PM to 10:00 PM"
+]
+
+# Atomic 1-hour slots inside standard windows
+WINDOW_SUB_SLOTS = {
+    "Morning Window: 08:00 AM to 12:00 PM": [
+        "08:00 AM - 09:00 AM",
+        "09:00 AM - 10:00 AM",
+        "10:00 AM - 11:00 AM",
+        "11:00 AM - 12:00 PM"
+    ],
+    "Afternoon Window: 03:00 PM to 06:00 PM": [
+        "03:00 PM - 04:00 PM",
+        "04:00 PM - 05:00 PM",
+        "05:00 PM - 06:00 PM"
+    ],
+    "Early Morning: 07:00 AM to 09:00 AM": [
+        "07:00 AM - 08:00 AM",
+        "08:00 AM - 09:00 AM"
+    ],
+    "Late Evening: 08:00 PM to 10:00 PM": [
+        "08:00 PM - 09:00 PM",
+        "09:00 PM - 10:00 PM"
+    ]
+}
+
+def get_atomic_hours_for_selection(window, duration, slot_choice):
+    """Returns the list of 1-hour atomic blocks covered by a creator's selection."""
+    if window not in WINDOW_SUB_SLOTS:
+        return [slot_choice] if slot_choice else [window]
+    
+    sub_slots = WINDOW_SUB_SLOTS[window]
+    
+    if duration == "Full Window" or "Full Window" in slot_choice:
+        return list(sub_slots)
+    elif duration == "1 Hour":
+        if "Flexible" in slot_choice:
+            return [sub_slots[0]]
+        for s in sub_slots:
+            if s in slot_choice:
+                return [s]
+        return [sub_slots[0]]
+    elif duration == "2 Hours":
+        if "Flexible" in slot_choice:
+            return sub_slots[:2]
+        # Match span e.g. 08:00 AM - 10:00 AM
+        for i in range(len(sub_slots) - 1):
+            start_p = sub_slots[i].split(" - ")[0]
+            end_p = sub_slots[i+1].split(" - ")[1]
+            if start_p in slot_choice and end_p in slot_choice:
+                return [sub_slots[i], sub_slots[i+1]]
+        return sub_slots[:2]
+    elif duration == "3 Hours":
+        if len(sub_slots) >= 3:
+            for i in range(len(sub_slots) - 2):
+                start_p = sub_slots[i].split(" - ")[0]
+                end_p = sub_slots[i+2].split(" - ")[1]
+                if start_p in slot_choice and end_p in slot_choice:
+                    return [sub_slots[i], sub_slots[i+1], sub_slots[i+2]]
+            return sub_slots[:3]
+        return list(sub_slots)
+    
+    return [slot_choice]
 
 # ----------------- DATA PERSISTENCE LAYER -----------------
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
@@ -85,13 +185,13 @@ CAFES_FILE = os.path.join(DATA_DIR, "cafes.json")
 CREATORS_FILE = os.path.join(DATA_DIR, "creators.json")
 BOOKINGS_FILE = os.path.join(DATA_DIR, "bookings.json")
 
-# Pre-seeded Chandigarh Cafés
+# Pre-seeded Chandigarh Cafés with flexible windows
 INITIAL_CAFES = [
     {
         "id": "cafe_1",
         "name": "The Willow Café",
         "sector": "Sector 9",
-        "slots": ["Morning (8 AM - 11 AM)", "Afternoon (3 PM - 5 PM)"],
+        "slots": ["Morning Window: 08:00 AM to 12:00 PM", "Afternoon Window: 03:00 PM to 06:00 PM"],
         "max_crew": 4,
         "allows_tripod": True,
         "has_natural_light": True,
@@ -103,7 +203,7 @@ INITIAL_CAFES = [
         "id": "cafe_2",
         "name": "Blue Tokai Coffee Roasters",
         "sector": "Sector 8",
-        "slots": ["Morning (8 AM - 10 AM)", "Afternoon (3 PM - 5 PM)", "Evening (5 PM - 7 PM)"],
+        "slots": ["Morning Window: 08:00 AM to 12:00 PM", "Afternoon Window: 03:00 PM to 06:00 PM", "Late Evening: 08:00 PM to 10:00 PM"],
         "max_crew": 3,
         "allows_tripod": True,
         "has_natural_light": True,
@@ -115,7 +215,7 @@ INITIAL_CAFES = [
         "id": "cafe_3",
         "name": "Backpacker's Café",
         "sector": "Sector 9",
-        "slots": ["Morning (8 AM - 10 AM)"],
+        "slots": ["Morning Window: 08:00 AM to 12:00 PM"],
         "max_crew": 2,
         "allows_tripod": False,
         "has_natural_light": False,
@@ -127,7 +227,7 @@ INITIAL_CAFES = [
         "id": "cafe_4",
         "name": "Sector 7 Social",
         "sector": "Sector 7",
-        "slots": ["Morning (10 AM - 1 PM)", "Afternoon (2 PM - 5 PM)"],
+        "slots": ["Morning Window: 08:00 AM to 12:00 PM", "Afternoon Window: 03:00 PM to 06:00 PM"],
         "max_crew": 6,
         "allows_tripod": True,
         "has_natural_light": True,
@@ -137,7 +237,7 @@ INITIAL_CAFES = [
     }
 ]
 
-# Starter creators
+# Starter creators with hourly booking durations
 INITIAL_CREATORS = [
     {
         "id": "creator_1",
@@ -148,7 +248,10 @@ INITIAL_CREATORS = [
         "shoot_type": "Fashion & Lifestyle",
         "description": "Shooting seasonal lookbook reels with clothing brand",
         "preferred_sector": "Sector 9",
-        "preferred_slot": "Morning (8 AM - 11 AM)",
+        "preferred_window": "Morning Window: 08:00 AM to 12:00 PM",
+        "duration": "1 Hour",
+        "preferred_slot": "08:00 AM - 09:00 AM (1 Hr)",
+        "slot_hours": ["08:00 AM - 09:00 AM"],
         "crew_size": 3,
         "needs_tripod": True,
         "needs_natural_light": True,
@@ -165,7 +268,10 @@ INITIAL_CREATORS = [
         "shoot_type": "Fashion & Lifestyle",
         "description": "Footwear brand promo with 1 model",
         "preferred_sector": "Sector 9",
-        "preferred_slot": "Morning (8 AM - 11 AM)",
+        "preferred_window": "Morning Window: 08:00 AM to 12:00 PM",
+        "duration": "2 Hours",
+        "preferred_slot": "09:00 AM - 11:00 AM (2 Hrs)",
+        "slot_hours": ["09:00 AM - 10:00 AM", "10:00 AM - 11:00 AM"],
         "crew_size": 3,
         "needs_tripod": True,
         "needs_natural_light": True,
@@ -182,7 +288,10 @@ INITIAL_CREATORS = [
         "shoot_type": "Food & Beverage",
         "description": "Specialty coffee review and café aesthetic reel",
         "preferred_sector": "Sector 9",
-        "preferred_slot": "Afternoon (3 PM - 5 PM)",
+        "preferred_window": "Afternoon Window: 03:00 PM to 06:00 PM",
+        "duration": "1 Hour",
+        "preferred_slot": "03:00 PM - 04:00 PM (1 Hr)",
+        "slot_hours": ["03:00 PM - 04:00 PM"],
         "crew_size": 2,
         "needs_tripod": True,
         "needs_natural_light": True,
@@ -211,16 +320,30 @@ st.session_state.cafes = load_data(CAFES_FILE, INITIAL_CAFES)
 st.session_state.creators = load_data(CREATORS_FILE, INITIAL_CREATORS)
 st.session_state.bookings = load_data(BOOKINGS_FILE, [])
 
-# ----------------- BOOKED SLOTS TRACKING -----------------
-def get_booked_slots():
+# ----------------- BOOKED HOURLY SLOTS TRACKING -----------------
+def get_booked_hours_by_cafe():
+    """Returns a dict mapping cafe_id -> set of booked atomic 1-hour slots."""
     booked_map = {}
     for b in st.session_state.bookings:
         cid = b.get("cafe_id")
-        slot = b.get("slot")
-        if cid and slot:
-            if cid not in booked_map:
-                booked_map[cid] = set()
-            booked_map[cid].add(slot)
+        if not cid:
+            continue
+        if cid not in booked_map:
+            booked_map[cid] = set()
+        
+        # Check if booking stored explicit atomic hours
+        hours = b.get("hours", [])
+        if hours:
+            for h in hours:
+                booked_map[cid].add(h)
+        else:
+            # Fallback to slot string
+            slot_str = b.get("slot", "")
+            win = b.get("window", "")
+            dur = b.get("duration", "1 Hour")
+            inferred = get_atomic_hours_for_selection(win, dur, slot_str)
+            for h in inferred:
+                booked_map[cid].add(h)
     return booked_map
 
 def format_whatsapp_number(phone_str):
@@ -236,37 +359,69 @@ def format_whatsapp_number(phone_str):
         return digits
     return digits
 
-def get_available_slots_for_cafe(cafe):
-    booked_map = get_booked_slots()
-    booked_for_this = booked_map.get(cafe["id"], set())
-    return [s for s in cafe["slots"] if s not in booked_for_this]
+def get_open_hours_for_window(cafe_id, window):
+    """Returns list of open 1-hour sub-slots for a specific window at a cafe."""
+    all_sub = WINDOW_SUB_SLOTS.get(window, [])
+    if not all_sub:
+        return [window]
+    booked_map = get_booked_hours_by_cafe()
+    booked_for_cafe = booked_map.get(cafe_id, set())
+    return [h for h in all_sub if h not in booked_for_cafe]
 
-# ----------------- MATCHING ENGINE -----------------
+# ----------------- MATCHING ENGINE (WINDOW + HOURLY SLOTS) -----------------
 def evaluate_match_with_slots(creator, cafe):
     failed_reasons = []
     
+    # 1. Hard Rule: Crew Size
     if creator["crew_size"] > cafe["max_crew"]:
         failed_reasons.append(f"Crew size ({creator['crew_size']}) exceeds café limit ({cafe['max_crew']})")
     
+    # 2. Hard Rule: Tripod / Lights
     if creator["needs_tripod"] and not cafe["allows_tripod"]:
         failed_reasons.append("Creator needs tripod, but café does not allow tripods")
         
+    # 3. Hard Rule: Natural Light
     if creator["needs_natural_light"] and not cafe["has_natural_light"]:
         failed_reasons.append("Creator requires natural window light, which café lacks")
         
-    if creator["preferred_slot"] not in cafe["slots"]:
-        failed_reasons.append(f"Café does not host shoots during requested time ({creator['preferred_slot']})")
+    # 4. Window Compatibility
+    creator_win = creator.get("preferred_window", creator.get("preferred_slot", ""))
+    # Check if cafe offers creator's window or custom hours
+    window_offered = False
+    for cs in cafe["slots"]:
+        if creator_win == cs or (creator_win in cs) or (cs in creator_win):
+            window_offered = True
+            break
+        # Match "Morning" or "Afternoon" generic prefixes
+        if ("Morning" in creator_win and "Morning" in cs) or ("Afternoon" in creator_win and "Afternoon" in cs):
+            window_offered = True
+            break
+            
+    if not window_offered:
+        failed_reasons.append(f"Café does not host shoots during requested window ({creator_win})")
         
-    booked_map = get_booked_slots()
-    is_slot_already_taken = creator["preferred_slot"] in booked_map.get(cafe["id"], set())
-    remaining_slots = get_available_slots_for_cafe(cafe)
+    # 5. Atomic Hourly Slot Conflict Check
+    creator_hours = creator.get("slot_hours", [])
+    if not creator_hours:
+        creator_hours = get_atomic_hours_for_selection(
+            creator_win, 
+            creator.get("duration", "1 Hour"), 
+            creator.get("preferred_slot", "")
+        )
+        
+    booked_map = get_booked_hours_by_cafe()
+    cafe_booked = booked_map.get(cafe["id"], set())
+    
+    conflicting_hours = [h for h in creator_hours if h in cafe_booked]
+    open_sub_slots = get_open_hours_for_window(cafe["id"], creator_win)
     
     if failed_reasons:
-        return "INCOMPATIBLE", 0, failed_reasons, remaining_slots
+        return "INCOMPATIBLE", 0, failed_reasons, open_sub_slots
     
-    if is_slot_already_taken:
-        return "SLOT_TAKEN", 0, ["Someone has already booked this slot!"], remaining_slots
+    if conflicting_hours:
+        return "SLOT_TAKEN", 0, [f"Hour(s) {', '.join(conflicting_hours)} already booked by another creator!"], open_sub_slots
         
+    # Scoring
     score = 75
     pref_sec = creator.get("preferred_sector", "")
     if "Any" in pref_sec or pref_sec == cafe["sector"]:
@@ -278,14 +433,14 @@ def evaluate_match_with_slots(creator, cafe):
     elif "Discussion" in creator_deal and "Discussion" in cafe_deal:
         score += 10
         
-    return "AVAILABLE", score, [], remaining_slots
+    return "AVAILABLE", score, [], open_sub_slots
 
-def generate_whatsapp_message(creator, cafe, slot):
+def generate_whatsapp_message(creator, cafe, slot, duration="1 Hour"):
     msg = (
         f"Hi {creator['name']}! 🎬 (via Collabé)\n\n"
         f"We found a verified shoot match in Chandigarh for your brief:\n\n"
         f"📍 Venue: {cafe['name']} ({cafe['sector']})\n"
-        f"🕒 Available Slot: {slot}\n"
+        f"🕒 Confirmed Slot: {slot} ({duration})\n"
         f"👥 Max Crew: {cafe['max_crew']} people\n"
         f"💡 Deal Model: {cafe['deal_type']}\n"
         f"📷 Tripod: {'Allowed' if cafe['allows_tripod'] else 'No'} | Light: {'Natural' if cafe['has_natural_light'] else 'Normal'}\n\n"
@@ -295,7 +450,7 @@ def generate_whatsapp_message(creator, cafe, slot):
     wa_url = f"https://wa.me/{creator['whatsapp']}?text={encoded}"
     return msg, wa_url
 
-# ----------------- SIDEBAR & ACCESS CONTROL (ADMIN PIN: 7814) -----------------
+# ----------------- SIDEBAR & ACCESS CONTROL (ADMIN PIN VIA SECRETS) -----------------
 st.sidebar.markdown("## 🎬 **Collabé**")
 st.sidebar.markdown("*The Creator & Café Match Network*")
 
@@ -307,7 +462,7 @@ st.sidebar.markdown("---")
 
 # Dynamic Menu based on Admin Status
 if st.session_state.is_admin:
-    st.sidebar.markdown('<span class="admin-badge">🔓 Admin Desk Active (Lakhwinder)</span>', unsafe_allow_html=True)
+    st.sidebar.markdown('<span class="admin-badge">🔓 Admin Desk Active</span>', unsafe_allow_html=True)
     nav_options = [
         "⚡ Live Matching & Real-Time Booking (Admin)",
         "📊 Live Tabular Data & Slot Status (Admin)",
@@ -342,6 +497,40 @@ if page in ["📝 Creator / Brand Request Form", "📝 Creator / Brand Request F
     st.markdown('<div class="brand-header">Collabé</div>', unsafe_allow_html=True)
     st.markdown('<div class="sub-header">Creator & Small Brand Shoot Brief Registration</div>', unsafe_allow_html=True)
     
+    st.info("💡 **Flexible Hourly Booking**: Choose only the hours you need (1 Hour, 2 Hours, or more). Unused dead hours remain open for other creators so nothing goes to waste!")
+    
+    # Selection of Window & Duration outside form or inside for reactive slots
+    col_w1, col_w2 = st.columns(2)
+    selected_window = col_w1.selectbox(
+        "1. Preferred Shoot Window *",
+        WINDOW_OPTIONS + ["Custom Window / Other"]
+    )
+    selected_duration = col_w2.selectbox(
+        "2. Duration Needed *",
+        ["1 Hour", "2 Hours", "3 Hours", "Full Window"]
+    )
+    
+    # Dynamic slot choices based on Window + Duration
+    slot_options = []
+    if selected_window in WINDOW_SUB_SLOTS:
+        subs = WINDOW_SUB_SLOTS[selected_window]
+        if selected_duration == "1 Hour":
+            slot_options = [f"{s} (1 Hr)" for s in subs] + ["Flexible (Any 1 hour within window)"]
+        elif selected_duration == "2 Hours":
+            slot_options = [f"{subs[i].split(' - ')[0]} - {subs[i+1].split(' - ')[1]} (2 Hrs)" for i in range(len(subs)-1)]
+            if not slot_options:
+                slot_options = [f"{subs[0].split(' - ')[0]} - {subs[-1].split(' - ')[1]} (Full {selected_window.split(':')[0]})"]
+            slot_options.append("Flexible (Any 2 hours within window)")
+        elif selected_duration == "3 Hours":
+            if len(subs) >= 3:
+                slot_options = [f"{subs[i].split(' - ')[0]} - {subs[i+2].split(' - ')[1]} (3 Hrs)" for i in range(len(subs)-2)]
+            else:
+                slot_options = [f"{subs[0].split(' - ')[0]} - {subs[-1].split(' - ')[1]} (Full Window)"]
+        else: # Full Window
+            slot_options = [f"{subs[0].split(' - ')[0]} - {subs[-1].split(' - ')[1]} (Full {selected_window.split(':')[0]})"]
+    else:
+        slot_options = ["Custom Hours (Specify Below)"]
+        
     with st.form("creator_form"):
         col1, col2 = st.columns(2)
         name = col1.text_input("Creator / Brand Name *", placeholder="e.g. RajKaran")
@@ -349,7 +538,7 @@ if page in ["📝 Creator / Brand Request Form", "📝 Creator / Brand Request F
         
         col3, col4 = st.columns(2)
         followers = col3.selectbox("Follower Range *", ["Under 1K", "1K – 5K", "5K – 10K", "10K – 50K", "50K+"])
-        whatsapp = col4.text_input("WhatsApp Number (10 Digits) *", placeholder="e.g. 7814259209", help="Just type your 10-digit number. Country code +91 is added automatically.")
+        whatsapp = col4.text_input("WhatsApp Number *", value="917814259209", help="Type your 10-digit number or with country code 91.")
         
         st.markdown("---")
         shoot_type = st.selectbox(
@@ -358,18 +547,20 @@ if page in ["📝 Creator / Brand Request Form", "📝 Creator / Brand Request F
         )
         description = st.text_area("Describe the shoot in one or two lines *", placeholder="e.g. Seasonal fashion lookbook shoot with 1 model")
         
-        col5, col6, col7 = st.columns(3)
+        col5, col6 = st.columns(2)
         preferred_sector = col5.selectbox("Preferred Location / Sector", ["Any Sector (All Chandigarh)", "Sector 7", "Sector 8", "Sector 9", "Sector 10", "Sector 26", "Sector 35"])
-        preferred_slot = col6.selectbox("Preferred Time Window *", [
-            "Morning (8 AM - 11 AM)", 
-            "Morning (8 AM - 10 AM)", 
-            "Morning (10 AM - 1 PM)", 
-            "Afternoon (3 PM - 5 PM)", 
-            "Afternoon (2 PM - 5 PM)", 
-            "Evening (5 PM - 7 PM)"
-        ])
-        crew_size = col7.number_input("How many people on set? (Crew size) *", min_value=1, max_value=10, value=3)
+        crew_size = col6.number_input("How many people on set? (Crew size) *", min_value=1, max_value=10, value=3)
         
+        # Specific Slot Selector inside form
+        col_slot1, col_slot2 = st.columns(2)
+        chosen_slot = col_slot1.selectbox("Specific Preferred Slot Timing *", slot_options)
+        custom_slot_text = ""
+        if selected_window == "Custom Window / Other" or "Custom" in chosen_slot:
+            custom_slot_text = col_slot2.text_input("Specify Custom Window / Timing (e.g. 11:30 AM - 01:00 PM)", placeholder="11:30 AM - 01:00 PM")
+            final_slot_label = custom_slot_text if custom_slot_text else "Custom Slot"
+        else:
+            final_slot_label = chosen_slot
+            
         col8, col9 = st.columns(2)
         needs_tripod = col8.checkbox("Tripod / Lighting Gear Required?", value=True)
         needs_natural_light = col9.checkbox("High Natural Window Light Required?", value=True)
@@ -387,8 +578,9 @@ if page in ["📝 Creator / Brand Request Form", "📝 Creator / Brand Request F
         if submitted:
             clean_wa = format_whatsapp_number(whatsapp)
             if not name or not handle or not clean_wa or not description:
-                st.error("Please fill all required fields (*) with a valid 10-digit WhatsApp number.")
+                st.error("Please fill all required fields (*) with a valid WhatsApp phone number.")
             else:
+                atomic_hours = get_atomic_hours_for_selection(selected_window, selected_duration, final_slot_label)
                 new_creator = {
                     "id": f"creator_{len(st.session_state.creators)+1}",
                     "name": name,
@@ -398,7 +590,10 @@ if page in ["📝 Creator / Brand Request Form", "📝 Creator / Brand Request F
                     "shoot_type": shoot_type,
                     "description": description,
                     "preferred_sector": preferred_sector,
-                    "preferred_slot": preferred_slot,
+                    "preferred_window": selected_window,
+                    "duration": selected_duration,
+                    "preferred_slot": final_slot_label,
+                    "slot_hours": atomic_hours,
                     "crew_size": crew_size,
                     "needs_tripod": needs_tripod,
                     "needs_natural_light": needs_natural_light,
@@ -408,34 +603,31 @@ if page in ["📝 Creator / Brand Request Form", "📝 Creator / Brand Request F
                 }
                 st.session_state.creators.append(new_creator)
                 save_data(CREATORS_FILE, st.session_state.creators)
-                st.success("🎉 Shoot brief submitted to Collabé! Our matching engine is reviewing your request. You will receive matching café options directly on your WhatsApp.")
+                st.success(f"🎉 Shoot brief submitted to Collabé! Selected Slot: {final_slot_label} ({selected_duration}). You will receive matching café passes directly on WhatsApp.")
 
 # ----------------- PAGE: CAFÉ PUBLIC FORM -----------------
 elif page in ["☕ Café & Venue Setup", "☕ Café & Venue Setup (Public)"]:
     st.markdown('<div class="brand-header">Collabé</div>', unsafe_allow_html=True)
     st.markdown('<div class="sub-header">Café & Restaurant Venue Registration</div>', unsafe_allow_html=True)
     
+    st.info("💡 **Dead-Hour Windows**: Cafés list quiet hours (e.g. 8 AM to 12 PM or 3 PM to 6 PM). Creators can book 1 hour or multiple hours without blocking the rest of your window!")
+    
     with st.form("cafe_form"):
         col1, col2 = st.columns(2)
         cafe_name = col1.text_input("Café / Venue Name *", placeholder="e.g. The Willow Café")
-        sector = col2.selectbox("Location / Sector *", ["Sector 7", "Sector 8", "Sector 9", "Sector 26", "Sector 35"])
+        sector = col2.selectbox("Location / Sector *", ["Sector 7", "Sector 8", "Sector 9", "Sector 10", "Sector 26", "Sector 35"])
         
         col3, col4 = st.columns(2)
-        manager_phone = col3.text_input("Manager WhatsApp Number (10 Digits) *", placeholder="e.g. 7814259209", help="Just type your 10-digit number. Country code +91 is added automatically.")
+        manager_phone = col3.text_input("Manager WhatsApp Number *", value="917814259209", help="Type 10-digit number or with country code 91.")
         max_crew = col4.number_input("Maximum Crew Permitted *", min_value=1, max_value=15, value=4)
         
         slots = st.multiselect(
-            "Select all quiet slots available for shoots *",
-            [
-                "Morning (8 AM - 10 AM)", 
-                "Morning (8 AM - 11 AM)", 
-                "Morning (10 AM - 1 PM)", 
-                "Afternoon (2 PM - 5 PM)", 
-                "Afternoon (3 PM - 5 PM)", 
-                "Evening (5 PM - 7 PM)"
-            ],
-            default=["Morning (8 AM - 11 AM)", "Afternoon (3 PM - 5 PM)"]
+            "Select all quiet dead-hour windows available for shoots *",
+            WINDOW_OPTIONS,
+            default=["Morning Window: 08:00 AM to 12:00 PM", "Afternoon Window: 03:00 PM to 06:00 PM"]
         )
+        
+        custom_window_input = st.text_input("➕ Have Custom Dead Hours? Enter here (e.g. 11:00 AM to 02:00 PM):", placeholder="11:00 AM to 02:00 PM")
         
         col5, col6 = st.columns(2)
         allows_tripod = col5.checkbox("Allow Tripods & Ring Lights?", value=True)
@@ -455,14 +647,18 @@ elif page in ["☕ Café & Venue Setup", "☕ Café & Venue Setup (Public)"]:
         
         if st.form_submit_button("🏪 Register Café on Collabé"):
             clean_mgr_phone = format_whatsapp_number(manager_phone)
-            if not cafe_name or not clean_mgr_phone or not slots:
-                st.error("Please fill all required venue details with a valid 10-digit phone number.")
+            final_slots = list(slots)
+            if custom_window_input.strip():
+                final_slots.append(f"Custom Window: {custom_window_input.strip()}")
+                
+            if not cafe_name or not clean_mgr_phone or not final_slots:
+                st.error("Please fill all required venue details with a valid phone number and at least one dead-hour window.")
             else:
                 new_cafe = {
                     "id": f"cafe_{len(st.session_state.cafes)+1}",
                     "name": cafe_name,
                     "sector": sector,
-                    "slots": slots,
+                    "slots": final_slots,
                     "max_crew": max_crew,
                     "allows_tripod": allows_tripod,
                     "has_natural_light": has_natural_light,
@@ -479,7 +675,7 @@ elif page == "🔍 Check My Booking Status":
     st.markdown('<div class="brand-header">Collabé</div>', unsafe_allow_html=True)
     st.markdown('<div class="sub-header">Check Your Confirmed Shoot Pass</div>', unsafe_allow_html=True)
     
-    phone_search = st.text_input("Enter your 10-digit WhatsApp Number to check your pass:", placeholder="e.g. 7814259209")
+    phone_search = st.text_input("Enter your WhatsApp Number to check your pass:", value="917814259209", placeholder="e.g. 7814259209")
     if phone_search:
         search_norm = format_whatsapp_number(phone_search)
         user_bookings = [b for b in st.session_state.bookings if format_whatsapp_number(b.get("creator_phone", "")) == search_norm]
@@ -489,7 +685,7 @@ elif page == "🔍 Check My Booking Status":
                 <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border-radius: 12px; padding: 20px; margin-bottom: 15px;">
                     <h3 style="margin: 0; color: white;">🎟️ Official Shoot Pass: {b['booking_id']}</h3>
                     <p style="margin-top: 8px; margin-bottom: 4px;"><b>Venue:</b> {b['cafe_name']} ({b['sector']})</p>
-                    <p style="margin-bottom: 4px;"><b>Slot:</b> {b['slot']} | <b>Deal:</b> {b['deal']}</p>
+                    <p style="margin-bottom: 4px;"><b>Slot:</b> {b['slot']} | <b>Window:</b> {b.get('window', 'Dead Hours')} | <b>Deal:</b> {b['deal']}</p>
                     <p style="margin-bottom: 0px;"><b>Status:</b> Confirmed & Locked ✅</p>
                 </div>
                 """, unsafe_allow_html=True)
@@ -499,36 +695,41 @@ elif page == "🔍 Check My Booking Status":
 # ----------------- ADMIN PAGE: LIVE MATCHING & REAL-TIME BOOKING -----------------
 elif page == "⚡ Live Matching & Real-Time Booking (Admin)":
     st.markdown('<div class="brand-header">Collabé — Admin Desk</div>', unsafe_allow_html=True)
-    st.markdown('<div class="sub-header">Live Matching Algorithm, Slot Locks & WhatsApp Dispatch Desk</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sub-header">Live Matching Algorithm, Hourly Slot Locks & WhatsApp Dispatch Desk</div>', unsafe_allow_html=True)
     
     if not st.session_state.creators:
         st.warning("No creator briefs submitted yet.")
     else:
         st.markdown("### 1️⃣ Select Creator Profile to Match:")
-        creator_keys = {f"{c['name']} ({c['handle']}) — Wants: {c['preferred_slot']} in {c['preferred_sector']}": c for c in st.session_state.creators}
+        creator_keys = {
+            f"{c['name']} ({c['handle']}) — Wants: {c['preferred_slot']} in {c['preferred_sector']}": c 
+            for c in st.session_state.creators
+        }
         selected_key = st.selectbox("Choose Creator / Brand:", list(creator_keys.keys()))
         current_creator = creator_keys[selected_key]
         
-        with st.expander(f"📋 Shoot Brief for {current_creator['name']}", expanded=False):
+        with st.expander(f"📋 Shoot Brief for {current_creator['name']}", expanded=True):
             c1, c2, c3 = st.columns(3)
             c1.write(f"**Shoot Type:** {current_creator['shoot_type']}")
             c1.write(f"**Crew Size:** {current_creator['crew_size']} people")
-            c2.write(f"**Preferred Slot:** `{current_creator['preferred_slot']}`")
-            c2.write(f"**Preferred Sector:** {current_creator['preferred_sector']}")
+            c2.write(f"**Requested Slot:** `{current_creator['preferred_slot']}`")
+            c2.write(f"**Window & Duration:** {current_creator.get('preferred_window', 'N/A')} ({current_creator.get('duration', '1 Hr')})")
             c3.write(f"**Needs Tripod:** {'Yes' if current_creator['needs_tripod'] else 'No'}")
-            c3.write(f"**WhatsApp:** {current_creator['whatsapp']}")
+            c3.write(f"**WhatsApp:** +{current_creator['whatsapp']}")
 
         st.markdown("---")
-        st.markdown("### 2️⃣ Live Matching & Slot Status:")
+        st.markdown("### 2️⃣ Live Matching & Hourly Slot Availability:")
         
         has_any_match = False
         
         for cafe in st.session_state.cafes:
-            status, score, reasons, remaining_slots = evaluate_match_with_slots(current_creator, cafe)
+            status, score, reasons, open_sub_slots = evaluate_match_with_slots(current_creator, cafe)
             
             # CASE A: AVAILABLE
             if status == "AVAILABLE":
                 has_any_match = True
+                chips_html = "".join([f'<span class="hour-chip-free">{h}</span>' for h in open_sub_slots])
+                
                 st.markdown(f"""
                 <div class="match-card">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -540,8 +741,8 @@ elif page == "⚡ Live Matching & Real-Time Booking (Admin)":
                         <b>Max Crew:</b> {cafe['max_crew']} &nbsp;|&nbsp; 
                         <b>Deal:</b> {cafe['deal_type']}
                     </p>
-                    <p style="margin-bottom: 0px; color: #555;">
-                        <b>Other Open Slots at this Café:</b> {', '.join(remaining_slots) if remaining_slots else 'Only this slot'}
+                    <p style="margin-bottom: 0px; color: #444;">
+                        <b>Remaining Open Hours in this Window:</b> {chips_html if chips_html else 'All Window Open'}
                     </p>
                 </div>
                 """, unsafe_allow_html=True)
@@ -550,9 +751,20 @@ elif page == "⚡ Live Matching & Real-Time Booking (Admin)":
                 
                 btn_key = f"book_{current_creator['id']}_{cafe['id']}"
                 if col_btn1.button(f"🤝 Accept & Lock Slot ({cafe['name']})", key=btn_key):
-                    booked_map = get_booked_slots()
-                    if current_creator['preferred_slot'] in booked_map.get(cafe['id'], set()):
-                        st.error(f"❌ Someone just booked this slot a moment ago! Slot '{current_creator['preferred_slot']}' is no longer available.")
+                    # Check atomic overlap at instant of booking
+                    creator_hours = current_creator.get("slot_hours", [])
+                    if not creator_hours:
+                        creator_hours = get_atomic_hours_for_selection(
+                            current_creator.get("preferred_window", ""),
+                            current_creator.get("duration", "1 Hour"),
+                            current_creator["preferred_slot"]
+                        )
+                    booked_map = get_booked_hours_by_cafe()
+                    cafe_booked = booked_map.get(cafe["id"], set())
+                    clash = [h for h in creator_hours if h in cafe_booked]
+                    
+                    if clash:
+                        st.error(f"❌ Race condition! Another creator just locked '{', '.join(clash)}'. Please choose remaining open hours.")
                     else:
                         booking_record = {
                             "booking_id": f"CLB_{datetime.now().strftime('%m%d_%H%M%S')}",
@@ -563,7 +775,10 @@ elif page == "⚡ Live Matching & Real-Time Booking (Admin)":
                             "cafe_id": cafe["id"],
                             "cafe_name": cafe["name"],
                             "sector": cafe["sector"],
+                            "window": current_creator.get("preferred_window", "Dead Hours Window"),
+                            "duration": current_creator.get("duration", "1 Hour"),
                             "slot": current_creator["preferred_slot"],
+                            "hours": creator_hours,
                             "deal": cafe["deal_type"],
                             "confirmed_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
                             "status": "Confirmed & Locked on Collabé 🔒"
@@ -573,7 +788,12 @@ elif page == "⚡ Live Matching & Real-Time Booking (Admin)":
                         st.toast(f"Slot Locked on Collabé for {current_creator['name']} at {cafe['name']}!", icon="🎉")
                         st.rerun()
                         
-                msg_text, wa_url = generate_whatsapp_message(current_creator, cafe, current_creator['preferred_slot'])
+                msg_text, wa_url = generate_whatsapp_message(
+                    current_creator, 
+                    cafe, 
+                    current_creator['preferred_slot'], 
+                    current_creator.get('duration', '1 Hour')
+                )
                 col_btn2.link_button("📲 Send WhatsApp Alert", wa_url)
                 
                 with col_btn3.expander("Preview WhatsApp Notification"):
@@ -582,8 +802,10 @@ elif page == "⚡ Live Matching & Real-Time Booking (Admin)":
             # CASE B: SLOT BOOKED
             elif status == "SLOT_TAKEN":
                 has_any_match = True
-                booked_by = [b for b in st.session_state.bookings if b.get("cafe_id") == cafe["id"] and b.get("slot") == current_creator["preferred_slot"]]
-                my_booking = next((b for b in booked_by if b.get("creator_id") == current_creator["id"]), None)
+                
+                # Check who booked this cafe
+                cafe_bookings = [b for b in st.session_state.bookings if b.get("cafe_id") == cafe["id"]]
+                my_booking = next((b for b in cafe_bookings if b.get("creator_id") == current_creator["id"]), None)
                 
                 if my_booking:
                     st.balloons()
@@ -594,7 +816,7 @@ elif page == "⚡ Live Matching & Real-Time Booking (Admin)":
                             Pass ID: {my_booking['booking_id']}
                         </span>
                         <p style="font-size: 1.1rem; margin-top: 10px; margin-bottom: 5px;">
-                            <b>Venue:</b> {cafe['name']} ({cafe['sector']}) | <b>Slot:</b> {my_booking['slot']}
+                            <b>Venue:</b> {cafe['name']} ({cafe['sector']}) | <b>Slot:</b> {my_booking['slot']} ({my_booking.get('duration', '1 Hr')})
                         </p>
                     </div>
                     """, unsafe_allow_html=True)
@@ -604,7 +826,7 @@ elif page == "⚡ Live Matching & Real-Time Booking (Admin)":
                         f"Hello {cafe['name']} Management! 🎬 (via Collabé)\n\n"
                         f"Great news! Creator {current_creator['name']} ({current_creator['handle']}, {current_creator['followers']} followers) has confirmed and locked the shoot slot on Collabé!\n\n"
                         f"🎟️ Booking ID: {my_booking['booking_id']}\n"
-                        f"🕒 Slot: {my_booking['slot']}\n"
+                        f"🕒 Slot: {my_booking['slot']} ({my_booking.get('duration', '1 Hr')})\n"
                         f"👥 Crew Size: {current_creator['crew_size']} people\n"
                         f"📸 Shoot: {current_creator['description']}\n"
                         f"💡 Agreed Deal: {cafe['deal_type']}\n"
@@ -620,7 +842,7 @@ elif page == "⚡ Live Matching & Real-Time Booking (Admin)":
                         f"Hi {current_creator['name']}! Your shoot is confirmed and locked in the schedule.\n\n"
                         f"📍 Venue: {cafe['name']}, {cafe['sector']}\n"
                         f"🎟️ Booking Pass ID: {my_booking['booking_id']}\n"
-                        f"🕒 Confirmed Slot: {my_booking['slot']}\n"
+                        f"🕒 Confirmed Slot: {my_booking['slot']} ({my_booking.get('duration', '1 Hr')})\n"
                         f"👥 Crew Size Allowed: Up to {cafe['max_crew']} people\n"
                         f"💡 Agreed Deal: {cafe['deal_type']}\n"
                         f"📷 Rules: {'Tripods Allowed ✅' if cafe['allows_tripod'] else 'No Tripods ❌'} | {'Natural Light Available ✅' if cafe['has_natural_light'] else 'Indoor Light'}\n"
@@ -634,27 +856,38 @@ elif page == "⚡ Live Matching & Real-Time Booking (Admin)":
                     if col_act3.button("❌ Release Slot", key=f"cancel_{my_booking['booking_id']}"):
                         st.session_state.bookings = [b for b in st.session_state.bookings if b["booking_id"] != my_booking["booking_id"]]
                         save_data(BOOKINGS_FILE, st.session_state.bookings)
-                        st.toast("Slot reopened!", icon="🔄")
+                        st.toast("Slot reopened for other creators!", icon="🔄")
                         st.rerun()
 
                 else:
-                    other_creator_name = booked_by[0]['creator_name'] if booked_by else "another creator"
+                    conflicting_booking = cafe_bookings[0] if cafe_bookings else None
+                    other_creator = conflicting_booking.get("creator_name", "another creator") if conflicting_booking else "another creator"
+                    chips_html = "".join([f'<span class="hour-chip-free">{h}</span>' for h in open_sub_slots])
+                    
                     st.markdown(f"""
                     <div class="slot-taken-card">
                         <h3 style="margin: 0; color: #9b1c1c;">🔴 {cafe['name']} — {cafe['sector']}</h3>
                         <p style="color: #771d1d; margin-top: 5px;">
-                            Slot <code>{current_creator['preferred_slot']}</code> is <b>UNAVAILABLE ❌</b> because {other_creator_name} booked it first.
+                            Slot <code>{current_creator['preferred_slot']}</code> is <b>UNAVAILABLE ❌</b> because {other_creator} booked this hour first.
                         </p>
-                        <p><b>Other open slots:</b> {', '.join(remaining_slots) if remaining_slots else 'None left'}</p>
+                        <p style="margin-bottom: 0px; color: #333;">
+                            <b>Still Open in this Window at this Café:</b> {chips_html if chips_html else 'No remaining hours in this window'}
+                        </p>
                     </div>
                     """, unsafe_allow_html=True)
+
+            # CASE C: INCOMPATIBLE
+            else:
+                with st.expander(f"⚪ Incompatible: {cafe['name']} ({cafe['sector']})"):
+                    for r in reasons:
+                        st.write(f"• {r}")
 
 # ----------------- ADMIN PAGE: LIVE TABULAR DATA -----------------
 elif page == "📊 Live Tabular Data & Slot Status (Admin)":
     st.markdown('<div class="brand-header">Collabé — Database Admin</div>', unsafe_allow_html=True)
-    st.markdown('<div class="sub-header">Internal Data Tables & Real-Time Slot Inventory</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sub-header">Internal Data Tables & Real-Time Hourly Slot Inventory</div>', unsafe_allow_html=True)
     
-    tab1, tab2, tab3 = st.tabs(["🤝 Confirmed Bookings", "☕ Cafés & Slot Inventory", "📝 Creator Briefs"])
+    tab1, tab2, tab3 = st.tabs(["🤝 Confirmed Bookings", "☕ Cafés & Dead-Hour Inventory", "📝 Creator Briefs"])
     
     with tab1:
         st.markdown(f"**Total Confirmed Bookings:** {len(st.session_state.bookings)}")
@@ -665,19 +898,29 @@ elif page == "📊 Live Tabular Data & Slot Status (Admin)":
             st.info("No bookings confirmed yet.")
             
     with tab2:
-        st.markdown("**Slot Inventory per Café:**")
+        st.markdown("**Hourly Dead-Hour Inventory per Café:**")
         cafe_status_list = []
-        booked_map = get_booked_slots()
+        booked_map = get_booked_hours_by_cafe()
         for c in st.session_state.cafes:
-            b_slots = list(booked_map.get(c["id"], []))
-            avail_slots = [s for s in c["slots"] if s not in b_slots]
+            b_hours = list(booked_map.get(c["id"], []))
+            
+            # Compute total free hours
+            all_possible_hours = []
+            for win in c["slots"]:
+                if win in WINDOW_SUB_SLOTS:
+                    all_possible_hours.extend(WINDOW_SUB_SLOTS[win])
+                else:
+                    all_possible_hours.append(win)
+            free_hours = [h for h in all_possible_hours if h not in b_hours]
+            
             cafe_status_list.append({
                 "Café Name": c["name"],
                 "Sector": c["sector"],
-                "All Slots": ", ".join(c["slots"]),
-                "Booked Slots": ", ".join(b_slots) if b_slots else "None (Open)",
-                "Available Slots": ", ".join(avail_slots) if avail_slots else "Fully Booked ❌",
+                "Dead-Hour Windows": ", ".join(c["slots"]),
+                "Booked Hours": ", ".join(b_hours) if b_hours else "None (0 Hrs)",
+                "Still Free & Available": ", ".join(free_hours) if free_hours else "Fully Booked ❌",
                 "Max Crew": c["max_crew"],
+                "Deal Model": c["deal_type"],
                 "Manager Phone": c["manager_phone"]
             })
         st.dataframe(pd.DataFrame(cafe_status_list), width='stretch')
