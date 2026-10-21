@@ -223,6 +223,19 @@ def get_booked_slots():
             booked_map[cid].add(slot)
     return booked_map
 
+def format_whatsapp_number(phone_str):
+    """Automatically formats any 10-digit Indian number with 91 country code."""
+    if not phone_str:
+        return ""
+    digits = "".join(filter(str.isdigit, str(phone_str)))
+    if digits.startswith("0") and len(digits) == 11:
+        digits = digits[1:]
+    if len(digits) == 10:
+        return "91" + digits
+    elif len(digits) == 12 and digits.startswith("91"):
+        return digits
+    return digits
+
 def get_available_slots_for_cafe(cafe):
     booked_map = get_booked_slots()
     booked_for_this = booked_map.get(cafe["id"], set())
@@ -336,7 +349,7 @@ if page in ["📝 Creator / Brand Request Form", "📝 Creator / Brand Request F
         
         col3, col4 = st.columns(2)
         followers = col3.selectbox("Follower Range *", ["Under 1K", "1K – 5K", "5K – 10K", "10K – 50K", "50K+"])
-        whatsapp = col4.text_input("WhatsApp Phone (with Country Code) *", value="917814259209", placeholder="917814259209")
+        whatsapp = col4.text_input("WhatsApp Number (10 Digits) *", placeholder="e.g. 7814259209", help="Just type your 10-digit number. Country code +91 is added automatically.")
         
         st.markdown("---")
         shoot_type = st.selectbox(
@@ -372,15 +385,16 @@ if page in ["📝 Creator / Brand Request Form", "📝 Creator / Brand Request F
         
         submitted = st.form_submit_button("🚀 Submit Shoot Brief to Collabé")
         if submitted:
-            if not name or not handle or not whatsapp or not description:
-                st.error("Please fill all required fields (*).")
+            clean_wa = format_whatsapp_number(whatsapp)
+            if not name or not handle or not clean_wa or not description:
+                st.error("Please fill all required fields (*) with a valid 10-digit WhatsApp number.")
             else:
                 new_creator = {
                     "id": f"creator_{len(st.session_state.creators)+1}",
                     "name": name,
                     "handle": handle,
                     "followers": followers,
-                    "whatsapp": whatsapp,
+                    "whatsapp": clean_wa,
                     "shoot_type": shoot_type,
                     "description": description,
                     "preferred_sector": preferred_sector,
@@ -407,7 +421,7 @@ elif page in ["☕ Café & Venue Setup", "☕ Café & Venue Setup (Public)"]:
         sector = col2.selectbox("Location / Sector *", ["Sector 7", "Sector 8", "Sector 9", "Sector 26", "Sector 35"])
         
         col3, col4 = st.columns(2)
-        manager_phone = col3.text_input("Manager WhatsApp Phone *", value="917814259209", placeholder="917814259209")
+        manager_phone = col3.text_input("Manager WhatsApp Number (10 Digits) *", placeholder="e.g. 7814259209", help="Just type your 10-digit number. Country code +91 is added automatically.")
         max_crew = col4.number_input("Maximum Crew Permitted *", min_value=1, max_value=15, value=4)
         
         slots = st.multiselect(
@@ -440,8 +454,9 @@ elif page in ["☕ Café & Venue Setup", "☕ Café & Venue Setup (Public)"]:
         )
         
         if st.form_submit_button("🏪 Register Café on Collabé"):
-            if not cafe_name or not manager_phone or not slots:
-                st.error("Please fill all required venue details.")
+            clean_mgr_phone = format_whatsapp_number(manager_phone)
+            if not cafe_name or not clean_mgr_phone or not slots:
+                st.error("Please fill all required venue details with a valid 10-digit phone number.")
             else:
                 new_cafe = {
                     "id": f"cafe_{len(st.session_state.cafes)+1}",
@@ -453,7 +468,7 @@ elif page in ["☕ Café & Venue Setup", "☕ Café & Venue Setup (Public)"]:
                     "has_natural_light": has_natural_light,
                     "allowed_shoots": ["Food & Beverage", "Fashion & Lifestyle", "UGC / Brand Content"],
                     "deal_type": deal_type,
-                    "manager_phone": manager_phone
+                    "manager_phone": clean_mgr_phone
                 }
                 st.session_state.cafes.append(new_cafe)
                 save_data(CAFES_FILE, st.session_state.cafes)
@@ -464,9 +479,10 @@ elif page == "🔍 Check My Booking Status":
     st.markdown('<div class="brand-header">Collabé</div>', unsafe_allow_html=True)
     st.markdown('<div class="sub-header">Check Your Confirmed Shoot Pass</div>', unsafe_allow_html=True)
     
-    phone_search = st.text_input("Enter your WhatsApp Phone Number to check your pass:", placeholder="e.g. 917814259209")
+    phone_search = st.text_input("Enter your 10-digit WhatsApp Number to check your pass:", placeholder="e.g. 7814259209")
     if phone_search:
-        user_bookings = [b for b in st.session_state.bookings if b.get("creator_phone") == phone_search]
+        search_norm = format_whatsapp_number(phone_search)
+        user_bookings = [b for b in st.session_state.bookings if format_whatsapp_number(b.get("creator_phone", "")) == search_norm]
         if user_bookings:
             for b in user_bookings:
                 st.markdown(f"""
