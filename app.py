@@ -497,8 +497,6 @@ def evaluate_match_with_slots(creator, cafe):
     cafe_deal = cafe.get("deal_type", "")
     if "Any" in creator_deal or "Any" in cafe_deal or creator_deal == cafe_deal:
         score += 10
-    elif "Discussion" in creator_deal and "Discussion" in cafe_deal:
-        score += 10
         
     return "AVAILABLE", score, [], open_sub_slots
 
@@ -566,13 +564,13 @@ if page in ["📝 Creator / Brand Request Form", "📝 Creator / Brand Request F
     st.info("💡 **Dynamic Hourly Slot Booking**: First pick the duration you need (1 Hour, 2 Hours, 3 Hours, etc.). The slot dropdown will automatically show matching morning and afternoon options for that duration!")
     
     col1, col2 = st.columns(2)
-    name = col1.text_input("Creator / Brand Name *", placeholder="e.g. RajKaran", key="c_name")
-    handle = col2.text_input("Instagram Handle *", placeholder="e.g. @rajkaran_shoots", key="c_handle")
+    name = col1.text_input("Creator / Brand Name *", key="c_name")
+    handle = col2.text_input("Instagram Handle *", key="c_handle")
     
     col3, col4_code, col4_num = st.columns([2, 1, 3])
     followers = col3.selectbox("Follower Range *", ["Under 1K", "1K – 5K", "5K – 10K", "10K – 50K", "50K+"], key="c_folls")
     col4_code.text_input("Country Code", value="+91 (India)", disabled=True, key="c_code")
-    whatsapp_input = col4_num.text_input("WhatsApp Number (10 Digits) *", value="7814259209", max_chars=10, placeholder="7814259209", key="c_num")
+    whatsapp_input = col4_num.text_input("WhatsApp Number (10 Digits) *", max_chars=10, key="c_num")
     
     st.markdown("---")
     shoot_type = st.selectbox(
@@ -620,8 +618,7 @@ if page in ["📝 Creator / Brand Request Form", "📝 Creator / Brand Request F
         "Free in exchange for 1 tagged Reel", 
         "Free coffee & meal with tag", 
         "Minimum spend ₹500", 
-        "Hourly fee ₹800/hr",
-        "Open to Discussion"
+        "Hourly fee ₹800/hr"
     ], key="c_deal")
     
     if st.button("🚀 Submit Shoot Brief to Collabé", type="primary"):
@@ -693,8 +690,7 @@ elif page in ["☕ Café & Venue Setup", "☕ Café & Venue Setup (Public)"]:
                 "Free in exchange for 1 tagged Reel", 
                 "Free coffee & meal with tag", 
                 "Minimum spend ₹500", 
-                "Hourly fee ₹800/hr",
-                "Open to Discussion"
+                "Hourly fee ₹800/hr"
             ]
         )
         
