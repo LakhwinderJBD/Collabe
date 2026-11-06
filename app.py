@@ -215,12 +215,46 @@ CAFE_WINDOW_TO_HOURS = {
 }
 
 def get_atomic_hours_for_creator_slot(slot_str):
-    """Returns the list of 1-hour atomic blocks for a creator's slot."""
+    """Returns the list of 1-hour atomic blocks for a creator's slot, with flexible regex parsing."""
+    if not slot_str:
+        return []
+    
+    # Direct match in map
     if slot_str in SLOT_TO_HOURS:
         return SLOT_TO_HOURS[slot_str]
     for k, v in SLOT_TO_HOURS.items():
         if k in slot_str or slot_str in k:
             return v
+            
+    # Flexible Regex Parser for any format: "8 AM - 11 AM", "08:00 AM - 11:00 AM", "8am to 12pm", etc.
+    import re
+    pattern = r'(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s*(?:-|to)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)'
+    match = re.search(pattern, slot_str, re.IGNORECASE)
+    if match:
+        sh, sm, sp, eh, em, ep = match.groups()
+        sh = int(sh)
+        eh = int(eh)
+        sp = (sp or ep).upper()
+        ep = ep.upper()
+        
+        start_24 = (sh % 12) + (12 if sp == "PM" else 0)
+        end_24 = (eh % 12) + (12 if ep == "PM" else 0)
+        if end_24 <= start_24:
+            end_24 += 12
+            
+        atomic_blocks = []
+        for h in range(start_24, end_24):
+            h_curr = h % 24
+            h_next = (h + 1) % 24
+            p_curr = "AM" if h_curr < 12 else "PM"
+            p_next = "AM" if h_next < 12 else "PM"
+            h12_curr = 12 if (h_curr % 12 == 0) else (h_curr % 12)
+            h12_next = 12 if (h_next % 12 == 0) else (h_next % 12)
+            atomic_blocks.append(f"{h12_curr:02d}:00 {p_curr} - {h12_next:02d}:00 {p_next}")
+            
+        if atomic_blocks:
+            return atomic_blocks
+
     return [slot_str]
 
 def get_all_hours_for_cafe(cafe):
@@ -232,7 +266,11 @@ def get_all_hours_for_cafe(cafe):
         elif w in SLOT_TO_HOURS:
             hours.update(SLOT_TO_HOURS[w])
         else:
-            hours.add(w)
+            parsed = get_atomic_hours_for_creator_slot(w)
+            if parsed and parsed != [w]:
+                hours.update(parsed)
+            else:
+                hours.add(w)
     return hours
 
 # ----------------- DATA PERSISTENCE LAYER -----------------
@@ -258,7 +296,7 @@ INITIAL_CAFES = [
         "has_natural_light": True,
         "allowed_shoots": ["Food & Beverage", "Fashion & Lifestyle", "UGC / Brand Content"],
         "deal_type": "Free in exchange for 1 tagged Reel",
-        "manager_phone": "917814259209"
+        "manager_phone": "919876543210"
     },
     {
         "id": "cafe_2",
@@ -275,7 +313,7 @@ INITIAL_CAFES = [
         "has_natural_light": True,
         "allowed_shoots": ["Food & Beverage", "UGC / Brand Content", "Product Shoot"],
         "deal_type": "Minimum spend ₹500",
-        "manager_phone": "917814259209"
+        "manager_phone": "919876543211"
     },
     {
         "id": "cafe_3",
@@ -290,7 +328,7 @@ INITIAL_CAFES = [
         "has_natural_light": False,
         "allowed_shoots": ["Food & Beverage", "Lifestyle"],
         "deal_type": "Free coffee & meal with tag",
-        "manager_phone": "917814259209"
+        "manager_phone": "919876543212"
     },
     {
         "id": "cafe_4",
@@ -306,7 +344,7 @@ INITIAL_CAFES = [
         "has_natural_light": True,
         "allowed_shoots": ["Fashion & Lifestyle", "Music / Commercial", "Product Shoot"],
         "deal_type": "Hourly fee ₹800/hr",
-        "manager_phone": "917814259209"
+        "manager_phone": "919876543213"
     }
 ]
 
@@ -317,7 +355,7 @@ INITIAL_CREATORS = [
         "name": "RajKaran",
         "handle": "@rajkaran_shoots",
         "followers": "22K",
-        "whatsapp": "917814259209",
+        "whatsapp": "919811122233",
         "shoot_type": "Fashion & Lifestyle",
         "description": "Shooting seasonal lookbook reels with clothing brand",
         "preferred_sector": "Sector 9",
@@ -336,7 +374,7 @@ INITIAL_CREATORS = [
         "name": "Raman",
         "handle": "@raman_visuals",
         "followers": "35K",
-        "whatsapp": "917814259209",
+        "whatsapp": "919811122234",
         "shoot_type": "Fashion & Lifestyle",
         "description": "Footwear brand promo with 1 model",
         "preferred_sector": "Sector 9",
@@ -355,7 +393,7 @@ INITIAL_CREATORS = [
         "name": "Deepak",
         "handle": "@deepak_creates",
         "followers": "45K",
-        "whatsapp": "917814259209",
+        "whatsapp": "919811122235",
         "shoot_type": "Food & Beverage",
         "description": "Specialty coffee review and café aesthetic reel",
         "preferred_sector": "Sector 9",
@@ -374,7 +412,7 @@ INITIAL_CREATORS = [
         "name": "Harman",
         "handle": "@harman_style",
         "followers": "30K",
-        "whatsapp": "917814259209",
+        "whatsapp": "919811122236",
         "shoot_type": "Fashion & Lifestyle",
         "description": "Golden hour casual lifestyle shoot",
         "preferred_sector": "Sector 9",
@@ -432,10 +470,12 @@ def get_booked_hours_by_cafe():
 
 def clean_indian_phone(phone_str):
     """Extracts 10 digits and prepends 91 country code automatically."""
+    if not phone_str:
+        return ""
     digits = "".join(filter(str.isdigit, str(phone_str)))
     if len(digits) >= 10:
         return "91" + digits[-10:]
-    return ""
+    return str(digits)
 
 def get_open_hours_for_cafe_and_slot(cafe, creator_slot):
     """Returns all open hours at this cafe."""
@@ -461,17 +501,22 @@ def evaluate_match_with_slots(creator, cafe):
         failed_reasons.append("Creator requires natural window light, which café lacks")
         
     # 4. Hourly / Window Compatibility Check
-    creator_hours = creator.get("slot_hours", [])
-    if not creator_hours:
-        creator_hours = get_atomic_hours_for_creator_slot(creator.get("preferred_slot", ""))
-        
+    creator_hours = get_atomic_hours_for_creator_slot(creator.get("preferred_slot", ""))
     cafe_hours = get_all_hours_for_cafe(cafe)
     
     # Check if cafe hosts all requested hours
     hours_offered = all(h in cafe_hours for h in creator_hours)
     if not hours_offered:
         slot_label = creator.get("preferred_slot", "")
-        window_match = any(slot_label in cs or cs in slot_label for cs in cafe["slots"])
+        window_match = any(slot_label.lower() in cs.lower() or cs.lower() in slot_label.lower() for cs in cafe["slots"])
+        # Flexible match for broad morning/afternoon/evening windows
+        if "morning" in slot_label.lower() and any("morning" in cs.lower() for cs in cafe["slots"]):
+            window_match = True
+        elif "afternoon" in slot_label.lower() and any("afternoon" in cs.lower() for cs in cafe["slots"]):
+            window_match = True
+        elif "evening" in slot_label.lower() and any("evening" in cs.lower() for cs in cafe["slots"]):
+            window_match = True
+
         if not window_match:
             failed_reasons.append(f"Café does not host shoots during requested time ({slot_label})")
         
@@ -491,11 +536,11 @@ def evaluate_match_with_slots(creator, cafe):
     # Scoring
     score = 75
     pref_sec = creator.get("preferred_sector", "")
-    if "Any" in pref_sec or pref_sec == cafe["sector"]:
+    if "Any" in pref_sec or pref_sec.lower() in cafe["sector"].lower() or cafe["sector"].lower() in pref_sec.lower():
         score += 15
     creator_deal = creator.get("budget_pref", "")
     cafe_deal = cafe.get("deal_type", "")
-    if "Any" in creator_deal or "Any" in cafe_deal or creator_deal == cafe_deal:
+    if "Any" in str(creator_deal) or "Any" in str(cafe_deal) or creator_deal == cafe_deal:
         score += 10
         
     return "AVAILABLE", score, [], open_sub_slots
@@ -503,12 +548,14 @@ def evaluate_match_with_slots(creator, cafe):
 def generate_whatsapp_message(creator, cafe, slot):
     msg = (
         f"Hi {creator['name']}! 🎬 (via Collabé)\n\n"
-        f"We found a verified shoot match in Chandigarh for your brief:\n\n"
-        f"📍 Venue: {cafe['name']} ({cafe['sector']})\n"
+        f"We found a verified shoot match in Tricity for your brief:\n\n"
+        f"👤 Content Creator / Brand: {creator['name']} ({creator['handle']})\n"
+        f"☕ Café / Restaurant: {cafe['name']} ({cafe['sector']})\n"
         f"🕒 Available Slot: {slot}\n"
-        f"👥 Max Crew: {cafe['max_crew']} people\n"
+        f"👥 Max Crew Allowed: {cafe['max_crew']} people\n"
         f"💡 Deal Model: {cafe['deal_type']}\n"
-        f"📷 Tripod: {'Allowed' if cafe['allows_tripod'] else 'No'} | Light: {'Natural' if cafe['has_natural_light'] else 'Normal'}\n\n"
+        f"📷 Gear Permissions: {'Tripod Allowed ✅' if cafe['allows_tripod'] else 'No Tripods ❌'} | {'Natural Light Available ✅' if cafe['has_natural_light'] else 'Normal Indoor Light'}\n"
+        f"📞 Venue Manager Contact: +{cafe['manager_phone']}\n\n"
         f"⚠️ Note: Slots on Collabé are locked on a first-come, first-served basis. Reply YES to accept!"
     )
     encoded = urllib.parse.quote(msg)
@@ -752,11 +799,13 @@ elif page == "⚡ Live Matching & Real-Time Booking (Admin)":
         st.warning("No creator briefs submitted yet.")
     else:
         st.markdown("### 1️⃣ Select Creator Profile to Match:")
+        # List newest creators first so the person who just filled the form is selected by default
+        creator_list = list(reversed(st.session_state.creators))
         creator_keys = {
-            f"{c['name']} ({c['handle']}) — Wants: {c['preferred_slot']} in {c['preferred_sector']}": c 
-            for c in st.session_state.creators
+            f"{c['name']} ({c['handle']}) — Wants: {c['preferred_slot']} in {c['preferred_sector']} [📱 +{c['whatsapp']}]": c 
+            for c in creator_list
         }
-        selected_key = st.selectbox("Choose Creator / Brand:", list(creator_keys.keys()))
+        selected_key = st.selectbox("Choose Creator / Brand to Review:", list(creator_keys.keys()))
         current_creator = creator_keys[selected_key]
         
         with st.expander(f"📋 Shoot Brief for {current_creator['name']}", expanded=True):
@@ -803,9 +852,7 @@ elif page == "⚡ Live Matching & Real-Time Booking (Admin)":
                 
                 btn_key = f"book_{current_creator['id']}_{cafe['id']}"
                 if col_btn1.button(f"🤝 Accept & Lock Slot ({cafe['name']})", key=btn_key):
-                    creator_hours = current_creator.get("slot_hours", [])
-                    if not creator_hours:
-                        creator_hours = get_atomic_hours_for_creator_slot(current_creator["preferred_slot"])
+                    creator_hours = get_atomic_hours_for_creator_slot(current_creator["preferred_slot"])
                     booked_map = get_booked_hours_by_cafe()
                     cafe_booked = booked_map.get(cafe["id"], set())
                     clash = [h for h in creator_hours if h in cafe_booked]
@@ -818,10 +865,11 @@ elif page == "⚡ Live Matching & Real-Time Booking (Admin)":
                             "creator_id": current_creator["id"],
                             "creator_name": current_creator["name"],
                             "creator_handle": current_creator["handle"],
-                            "creator_phone": current_creator["whatsapp"],
+                            "creator_phone": clean_indian_phone(current_creator.get("whatsapp", "")),
                             "cafe_id": cafe["id"],
                             "cafe_name": cafe["name"],
                             "sector": cafe["sector"],
+                            "cafe_phone": clean_indian_phone(cafe.get("manager_phone", "")),
                             "duration": current_creator.get("duration", "1 Hour"),
                             "slot": current_creator["preferred_slot"],
                             "hours": creator_hours,
@@ -834,12 +882,13 @@ elif page == "⚡ Live Matching & Real-Time Booking (Admin)":
                         st.toast(f"Slot Locked on Collabé for {current_creator['name']} at {cafe['name']}!", icon="🎉")
                         st.rerun()
                         
+                creator_send_phone = clean_indian_phone(current_creator.get("whatsapp", ""))
                 msg_text, wa_url = generate_whatsapp_message(
                     current_creator, 
                     cafe, 
                     current_creator['preferred_slot']
                 )
-                col_btn2.link_button("📲 Send WhatsApp Alert", wa_url)
+                col_btn2.link_button(f"📲 WhatsApp {current_creator['name']} (+{creator_send_phone})", wa_url)
                 
                 with col_btn3.expander("Preview WhatsApp Notification"):
                     st.code(msg_text, language="text")
@@ -860,42 +909,48 @@ elif page == "⚡ Live Matching & Real-Time Booking (Admin)":
                             Pass ID: {my_booking['booking_id']}
                         </span>
                         <p style="font-size: 1.1rem; margin-top: 10px; margin-bottom: 5px;">
-                            <b>Venue:</b> {cafe['name']} ({cafe['sector']}) | <b>Slot:</b> {my_booking['slot']}
+                            <b>Creator:</b> {my_booking['creator_name']} | <b>Venue:</b> {cafe['name']} ({cafe['sector']}) | <b>Slot:</b> {my_booking['slot']}
                         </p>
                     </div>
                     """, unsafe_allow_html=True)
                     
+                    target_mgr_phone = clean_indian_phone(cafe.get("manager_phone", my_booking.get("cafe_phone", "")))
+                    target_creator_phone = clean_indian_phone(my_booking.get("creator_phone", current_creator.get("whatsapp", "")))
+                    
                     col_act1, col_act2, col_act3 = st.columns([1.5, 1.5, 1])
                     mgr_msg = (
                         f"Hello {cafe['name']} Management! 🎬 (via Collabé)\n\n"
-                        f"Great news! Creator {current_creator['name']} ({current_creator['handle']}, {current_creator['followers']} followers) has confirmed and locked the shoot slot on Collabé!\n\n"
-                        f"🎟️ Booking ID: {my_booking['booking_id']}\n"
-                        f"🕒 Slot: {my_booking['slot']}\n"
+                        f"Great news! A shoot booking has been confirmed and locked for your venue:\n\n"
+                        f"☕ Café / Restaurant: {cafe['name']} ({cafe['sector']})\n"
+                        f"👤 Content Creator / Brand: {my_booking['creator_name']} ({my_booking.get('creator_handle', '')})\n"
+                        f"🎟️ Booking Pass ID: {my_booking['booking_id']}\n"
+                        f"🕒 Confirmed Slot: {my_booking['slot']}\n"
                         f"👥 Crew Size: {current_creator['crew_size']} people\n"
-                        f"📸 Shoot: {current_creator['description']}\n"
-                        f"💡 Agreed Deal: {cafe['deal_type']}\n"
-                        f"📷 Gear: {'Tripod' if current_creator['needs_tripod'] else 'Phone/Handheld'}\n"
-                        f"📞 Creator Contact: +{current_creator['whatsapp']}\n\n"
+                        f"📸 Shoot Description: {current_creator['description']}\n"
+                        f"💡 Agreed Deal Model: {cafe['deal_type']}\n"
+                        f"📷 Gear Setup: {'Tripod Allowed' if current_creator['needs_tripod'] else 'Phone/Handheld Only'}\n"
+                        f"📞 Creator Contact: +{target_creator_phone}\n\n"
                         f"Please ensure a designated table is ready for the creator."
                     )
-                    mgr_url = f"https://wa.me/{cafe['manager_phone']}?text={urllib.parse.quote(mgr_msg)}"
-                    col_act1.link_button("📲 Notify Café Manager", mgr_url)
+                    mgr_url = f"https://wa.me/{target_mgr_phone}?text={urllib.parse.quote(mgr_msg)}"
+                    col_act1.link_button(f"📲 Notify {cafe['name']} (+{target_mgr_phone})", mgr_url)
                     
                     creator_pass_msg = (
                         f"🎉 OFFICIAL SHOOT PASS — Collabé 🎬\n\n"
-                        f"Hi {current_creator['name']}! Your shoot is confirmed and locked in the schedule.\n\n"
-                        f"📍 Venue: {cafe['name']}, {cafe['sector']}\n"
+                        f"Hi {my_booking['creator_name']}! Your shoot is confirmed and locked in the schedule.\n\n"
+                        f"👤 Content Creator / Brand: {my_booking['creator_name']} ({my_booking.get('creator_handle', '')})\n"
+                        f"☕ Café / Restaurant: {cafe['name']} ({cafe['sector']})\n"
                         f"🎟️ Booking Pass ID: {my_booking['booking_id']}\n"
-                        f"🕒 Confirmed Slot: {my_booking['slot']}\n"
+                        f"🕒 Confirmed Timing Slot: {my_booking['slot']}\n"
                         f"👥 Crew Size Allowed: Up to {cafe['max_crew']} people\n"
-                        f"💡 Agreed Deal: {cafe['deal_type']}\n"
-                        f"📷 Rules: {'Tripods Allowed ✅' if cafe['allows_tripod'] else 'No Tripods ❌'} | {'Natural Light Available ✅' if cafe['has_natural_light'] else 'Indoor Light'}\n"
-                        f"📞 Venue Manager Phone: +{cafe['manager_phone']}\n\n"
+                        f"💡 Agreed Deal Terms: {cafe['deal_type']}\n"
+                        f"📷 Gear Permissions: {'Tripods Allowed ✅' if cafe['allows_tripod'] else 'No Tripods ❌'} | {'Natural Light Available ✅' if cafe['has_natural_light'] else 'Indoor Light'}\n"
+                        f"📞 Venue Manager Phone: +{target_mgr_phone}\n\n"
                         f"⚡ On Arrival: Show this WhatsApp pass to the café manager or staff at the counter to access your reserved area.\n\n"
                         f"Have a great shoot!"
                     )
-                    pass_url = f"https://wa.me/{current_creator['whatsapp']}?text={urllib.parse.quote(creator_pass_msg)}"
-                    col_act2.link_button("📲 Send Pass to Creator", pass_url)
+                    pass_url = f"https://wa.me/{target_creator_phone}?text={urllib.parse.quote(creator_pass_msg)}"
+                    col_act2.link_button(f"📲 Send Pass to {my_booking['creator_name']} (+{target_creator_phone})", pass_url)
                     
                     if col_act3.button("❌ Release Slot", key=f"cancel_{my_booking['booking_id']}"):
                         st.session_state.bookings = [b for b in st.session_state.bookings if b["booking_id"] != my_booking["booking_id"]]
