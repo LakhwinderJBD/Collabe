@@ -69,6 +69,7 @@ st.markdown("""
     }
     .admin-badge {
         background-color: #e0e7ff;
+        
         color: #3730a3;
         padding: 4px 10px;
         border-radius: 6px;
@@ -283,7 +284,55 @@ BOOKINGS_FILE = os.path.join(DATA_DIR, "bookings.json")
 # Pre-seeded Chandigarh Cafés with Morning and Afternoon dead-hour windows
 INITIAL_CAFES = [
     {
-        "id": "cafe_1",
+        "id": "cafe_thirdwave",
+        "name": "Third Wave Coffee",
+        "sector": "Sector 35",
+        "slots": [
+            "Morning Window: 08:00 AM to 12:00 PM",
+            "Early Afternoon: 12:00 PM to 03:00 PM",
+            "Afternoon Window: 03:00 PM to 06:00 PM"
+        ],
+        "max_crew": 4,
+        "allows_tripod": True,
+        "has_natural_light": True,
+        "allowed_shoots": ["Food & Beverage", "Fashion & Lifestyle", "UGC / Brand Content"],
+        "deal_type": "Free in exchange for 1 tagged Reel",
+        "manager_phone": "917814259209"
+    },
+    {
+        "id": "cafe_midpoint",
+        "name": "Midpoint Café",
+        "sector": "Sector 35",
+        "slots": [
+            "Morning Window: 08:00 AM to 12:00 PM",
+            "Early Afternoon: 12:00 PM to 03:00 PM",
+            "Afternoon Window: 03:00 PM to 06:00 PM"
+        ],
+        "max_crew": 3,
+        "allows_tripod": True,
+        "has_natural_light": True,
+        "allowed_shoots": ["Food & Beverage", "Fashion & Lifestyle", "UGC / Brand Content"],
+        "deal_type": "Free in exchange for 1 tagged Reel",
+        "manager_phone": "917814259209"
+    },
+    {
+        "id": "cafe_courtyard",
+        "name": "The Courtyard Bistro",
+        "sector": "Sector 10",
+        "slots": [
+            "Morning Window: 08:00 AM to 12:00 PM",
+            "Early Afternoon: 12:00 PM to 03:00 PM",
+            "Afternoon Window: 03:00 PM to 06:00 PM"
+        ],
+        "max_crew": 3,
+        "allows_tripod": True,
+        "has_natural_light": True,
+        "allowed_shoots": ["Food & Beverage", "Fashion & Lifestyle", "UGC / Brand Content"],
+        "deal_type": "Free in exchange for 1 tagged Reel",
+        "manager_phone": "917814259209"
+    },
+    {
+        "id": "cafe_willow",
         "name": "The Willow Café",
         "sector": "Sector 9",
         "slots": [
@@ -296,42 +345,26 @@ INITIAL_CAFES = [
         "has_natural_light": True,
         "allowed_shoots": ["Food & Beverage", "Fashion & Lifestyle", "UGC / Brand Content"],
         "deal_type": "Free in exchange for 1 tagged Reel",
-        "manager_phone": "919876543210"
+        "manager_phone": "917814259209"
     },
     {
-        "id": "cafe_2",
+        "id": "cafe_bluetokai",
         "name": "Blue Tokai Coffee Roasters",
         "sector": "Sector 8",
         "slots": [
             "Morning Window: 08:00 AM to 12:00 PM",
             "Early Afternoon: 12:00 PM to 03:00 PM",
-            "Afternoon Window: 03:00 PM to 06:00 PM",
-            "Late Evening: 08:00 PM to 10:00 PM"
+            "Afternoon Window: 03:00 PM to 06:00 PM"
         ],
         "max_crew": 3,
         "allows_tripod": True,
         "has_natural_light": True,
         "allowed_shoots": ["Food & Beverage", "UGC / Brand Content", "Product Shoot"],
         "deal_type": "Minimum spend ₹500",
-        "manager_phone": "919876543211"
+        "manager_phone": "917814259209"
     },
     {
-        "id": "cafe_3",
-        "name": "Backpacker's Café",
-        "sector": "Sector 9",
-        "slots": [
-            "Morning Window: 08:00 AM to 12:00 PM",
-            "Early Afternoon: 12:00 PM to 03:00 PM"
-        ],
-        "max_crew": 2,
-        "allows_tripod": False,
-        "has_natural_light": False,
-        "allowed_shoots": ["Food & Beverage", "Lifestyle"],
-        "deal_type": "Free coffee & meal with tag",
-        "manager_phone": "919876543212"
-    },
-    {
-        "id": "cafe_4",
+        "id": "cafe_sec7social",
         "name": "Sector 7 Social",
         "sector": "Sector 7",
         "slots": [
@@ -344,87 +377,181 @@ INITIAL_CAFES = [
         "has_natural_light": True,
         "allowed_shoots": ["Fashion & Lifestyle", "Music / Commercial", "Product Shoot"],
         "deal_type": "Hourly fee ₹800/hr",
-        "manager_phone": "919876543213"
+        "manager_phone": "917814259209"
     }
 ]
 
-# Starter creators across Morning and Afternoon slots
+# Real Customer Trial Creators across Morning and Afternoon slots
 INITIAL_CREATORS = [
     {
-        "id": "creator_1",
-        "name": "RajKaran",
-        "handle": "@rajkaran_shoots",
-        "followers": "22K",
-        "whatsapp": "919811122233",
-        "shoot_type": "Fashion & Lifestyle",
-        "description": "Shooting seasonal lookbook reels with clothing brand",
-        "preferred_sector": "Sector 9",
-        "duration": "1 Hour",
-        "preferred_slot": "Morning: 08:00 AM - 09:00 AM (1 Hr)",
-        "slot_hours": ["08:00 AM - 09:00 AM"],
-        "crew_size": 3,
-        "needs_tripod": True,
-        "needs_natural_light": True,
-        "budget_pref": "Free in exchange for 1 tagged Reel",
-        "status": "Pending",
-        "timestamp": "2026-10-16 10:30"
-    },
-    {
-        "id": "creator_2",
-        "name": "Raman",
-        "handle": "@raman_visuals",
-        "followers": "35K",
-        "whatsapp": "919811122234",
-        "shoot_type": "Fashion & Lifestyle",
-        "description": "Footwear brand promo with 1 model",
-        "preferred_sector": "Sector 9",
-        "duration": "2 Hours",
-        "preferred_slot": "Morning: 09:00 AM - 11:00 AM (2 Hrs)",
-        "slot_hours": ["09:00 AM - 10:00 AM", "10:00 AM - 11:00 AM"],
-        "crew_size": 3,
-        "needs_tripod": True,
-        "needs_natural_light": True,
-        "budget_pref": "Free in exchange for 1 tagged Reel",
-        "status": "Pending",
-        "timestamp": "2026-10-16 10:35"
-    },
-    {
-        "id": "creator_3",
-        "name": "Deepak",
-        "handle": "@deepak_creates",
-        "followers": "45K",
-        "whatsapp": "919811122235",
+        "id": "creator_aman",
+        "name": "Aman",
+        "handle": "@Aman_Kaur",
+        "followers": "28K",
+        "whatsapp": "917814259209",
         "shoot_type": "Food & Beverage",
-        "description": "Specialty coffee review and café aesthetic reel",
-        "preferred_sector": "Sector 9",
+        "description": "wants good food to eat and wanna make reels",
+        "preferred_sector": "Sector 35",
+        "duration": "2 Hours",
+        "preferred_slot": "Afternoon: 12:00 PM - 02:00 PM (2 Hrs)",
+        "slot_hours": [
+            "12:00 PM - 01:00 PM",
+            "01:00 PM - 02:00 PM"
+        ],
+        "crew_size": 1,
+        "needs_tripod": False,
+        "needs_natural_light": True,
+        "budget_pref": "Free in exchange for 1 tagged Reel",
+        "status": "Confirmed",
+        "timestamp": "2026-11-06 15:51"
+    },
+    {
+        "id": "creator_raman",
+        "name": "Raman",
+        "handle": "@_ramansingh",
+        "followers": "35K",
+        "whatsapp": "917814259209",
+        "shoot_type": "Lifestyle",
+        "description": "wants good view",
+        "preferred_sector": "Sector 35",
         "duration": "1 Hour",
-        "preferred_slot": "Afternoon: 01:00 PM - 02:00 PM (1 Hr)",
-        "slot_hours": ["01:00 PM - 02:00 PM"],
+        "preferred_slot": "Morning: 10:00 AM - 11:00 AM (1 Hr)",
+        "slot_hours": [
+            "10:00 AM - 11:00 AM"
+        ],
+        "crew_size": 1,
+        "needs_tripod": True,
+        "needs_natural_light": True,
+        "budget_pref": "Free in exchange for 1 tagged Reel",
+        "status": "Confirmed",
+        "timestamp": "2026-11-06 15:56"
+    },
+    {
+        "id": "creator_sandeep",
+        "name": "sandeep",
+        "handle": "@sandeep_s",
+        "followers": "42K",
+        "whatsapp": "917814259209",
+        "shoot_type": "Content Creator",
+        "description": "something good",
+        "preferred_sector": "Sector 10",
+        "duration": "1 Hour",
+        "preferred_slot": "Afternoon: 03:00 PM - 04:00 PM (1 Hr)",
+        "slot_hours": [
+            "03:00 PM - 04:00 PM"
+        ],
+        "crew_size": 1,
+        "needs_tripod": True,
+        "needs_natural_light": True,
+        "budget_pref": "Free in exchange for 1 tagged Reel",
+        "status": "Confirmed",
+        "timestamp": "2026-11-06 15:58"
+    },
+    {
+        "id": "creator_arsh",
+        "name": "Arsh",
+        "handle": "@Arshdeep_",
+        "followers": "19K",
+        "whatsapp": "918837686678",
+        "shoot_type": "Fashion & Lifestyle",
+        "description": "Brand lookbook shoot with 5 models and clothing changes",
+        "preferred_sector": "Sector 10",
+        "duration": "1 Hour",
+        "preferred_slot": "Afternoon: 03:00 PM - 04:00 PM (1 Hr)",
+        "slot_hours": [
+            "03:00 PM - 04:00 PM"
+        ],
+        "crew_size": 5,
+        "needs_tripod": True,
+        "needs_natural_light": True,
+        "budget_pref": "Free in exchange for 1 tagged Reel",
+        "status": "Pending",
+        "timestamp": "2026-11-06 16:10"
+    },
+    {
+        "id": "creator_mukesh",
+        "name": "Mukesh",
+        "handle": "@_mukeshKumar",
+        "followers": "51K",
+        "whatsapp": "918146211111",
+        "shoot_type": "Food & Beverage",
+        "description": "Food review reel with 2 crew members",
+        "preferred_sector": "Sector 35",
+        "duration": "3 Hours",
+        "preferred_slot": "Morning: 08:00 AM - 11:00 AM (3 Hrs)",
+        "slot_hours": [
+            "08:00 AM - 09:00 AM",
+            "09:00 AM - 10:00 AM",
+            "10:00 AM - 11:00 AM"
+        ],
         "crew_size": 2,
         "needs_tripod": True,
         "needs_natural_light": True,
         "budget_pref": "Free in exchange for 1 tagged Reel",
         "status": "Pending",
-        "timestamp": "2026-10-16 11:15"
+        "timestamp": "2026-11-06 16:15"
+    }
+]
+
+# Verified Customer Trial Confirmed Bookings (WhatsApp Passes)
+INITIAL_BOOKINGS = [
+    {
+        "booking_id": "CLB_1106_155117",
+        "creator_id": "creator_aman",
+        "creator_name": "Aman",
+        "creator_handle": "@Aman_Kaur",
+        "creator_phone": "917814259209",
+        "cafe_id": "cafe_thirdwave",
+        "cafe_name": "Third Wave Coffee",
+        "sector": "Sector 35",
+        "cafe_phone": "917814259209",
+        "duration": "2 Hours",
+        "slot": "Afternoon: 12:00 PM - 02:00 PM (2 Hrs)",
+        "hours": [
+            "12:00 PM - 01:00 PM",
+            "01:00 PM - 02:00 PM"
+        ],
+        "deal": "Free in exchange for 1 tagged Reel",
+        "confirmed_at": "2026-11-06 15:51",
+        "status": "Confirmed & Locked on Collabé 🔒"
     },
     {
-        "id": "creator_4",
-        "name": "Harman",
-        "handle": "@harman_style",
-        "followers": "30K",
-        "whatsapp": "919811122236",
-        "shoot_type": "Fashion & Lifestyle",
-        "description": "Golden hour casual lifestyle shoot",
-        "preferred_sector": "Sector 9",
-        "duration": "2 Hours",
-        "preferred_slot": "Afternoon: 03:00 PM - 05:00 PM (2 Hrs)",
-        "slot_hours": ["03:00 PM - 04:00 PM", "04:00 PM - 05:00 PM"],
-        "crew_size": 3,
-        "needs_tripod": True,
-        "needs_natural_light": True,
-        "budget_pref": "Free in exchange for 1 tagged Reel",
-        "status": "Pending",
-        "timestamp": "2026-10-16 12:00"
+        "booking_id": "CLB_1106_155618",
+        "creator_id": "creator_raman",
+        "creator_name": "Raman",
+        "creator_handle": "@_ramansingh",
+        "creator_phone": "917814259209",
+        "cafe_id": "cafe_midpoint",
+        "cafe_name": "Midpoint Café",
+        "sector": "Sector 35",
+        "cafe_phone": "917814259209",
+        "duration": "1 Hour",
+        "slot": "Morning: 10:00 AM - 11:00 AM (1 Hr)",
+        "hours": [
+            "10:00 AM - 11:00 AM"
+        ],
+        "deal": "Free in exchange for 1 tagged Reel",
+        "confirmed_at": "2026-11-06 15:56",
+        "status": "Confirmed & Locked on Collabé 🔒"
+    },
+    {
+        "booking_id": "CLB_1106_155853",
+        "creator_id": "creator_sandeep",
+        "creator_name": "sandeep",
+        "creator_handle": "@sandeep_s",
+        "creator_phone": "917814259209",
+        "cafe_id": "cafe_courtyard",
+        "cafe_name": "The Courtyard Bistro",
+        "sector": "Sector 10",
+        "cafe_phone": "917814259209",
+        "duration": "1 Hour",
+        "slot": "Afternoon: 03:00 PM - 04:00 PM (1 Hr)",
+        "hours": [
+            "03:00 PM - 04:00 PM"
+        ],
+        "deal": "Free in exchange for 1 tagged Reel",
+        "confirmed_at": "2026-11-06 15:58",
+        "status": "Confirmed & Locked on Collabé 🔒"
     }
 ]
 
@@ -434,7 +561,11 @@ def load_data(file_path, default_data):
         return default_data
     try:
         with open(file_path, "r", encoding="utf-8") as f:
-            return json.load(f)
+            data = json.load(f)
+            if not data and default_data:
+                save_data(file_path, default_data)
+                return default_data
+            return data
     except Exception:
         return default_data
 
@@ -445,7 +576,7 @@ def save_data(file_path, data):
 # Keep session synced with disk
 st.session_state.cafes = load_data(CAFES_FILE, INITIAL_CAFES)
 st.session_state.creators = load_data(CREATORS_FILE, INITIAL_CREATORS)
-st.session_state.bookings = load_data(BOOKINGS_FILE, [])
+st.session_state.bookings = load_data(BOOKINGS_FILE, INITIAL_BOOKINGS)
 
 # ----------------- BOOKED HOURLY SLOTS TRACKING -----------------
 def get_booked_hours_by_cafe():
