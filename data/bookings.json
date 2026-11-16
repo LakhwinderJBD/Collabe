@@ -1,16 +1,60 @@
 [
     {
-        "booking_id": "CLB_1016_232215",
-        "creator_id": "creator_1",
-        "creator_name": "RajKaran",
-        "creator_handle": "@rajkaran_shoots",
-        "creator_phone": "919814123456",
-        "cafe_id": "cafe_1",
-        "cafe_name": "The Willow Caf\u00e9",
-        "sector": "Sector 9",
-        "slot": "Morning (8 AM - 11 AM)",
+        "booking_id": "CLB_1106_155117",
+        "creator_id": "creator_aman",
+        "creator_name": "Aman",
+        "creator_handle": "@Aman_Kaur",
+        "creator_phone": "917814259209",
+        "cafe_id": "cafe_thirdwave",
+        "cafe_name": "Third Wave Coffee",
+        "sector": "Sector 35",
+        "cafe_phone": "917814259209",
+        "duration": "2 Hours",
+        "slot": "Afternoon: 12:00 PM - 02:00 PM (2 Hrs)",
+        "hours": [
+            "12:00 PM - 01:00 PM",
+            "01:00 PM - 02:00 PM"
+        ],
         "deal": "Free in exchange for 1 tagged Reel",
-        "confirmed_at": "2026-10-16 23:22",
+        "confirmed_at": "2026-11-06 15:51",
+        "status": "Confirmed & Locked on Collab\u00e9 \ud83d\udd12"
+    },
+    {
+        "booking_id": "CLB_1106_155618",
+        "creator_id": "creator_raman",
+        "creator_name": "Raman",
+        "creator_handle": "@_ramansingh",
+        "creator_phone": "917814259209",
+        "cafe_id": "cafe_midpoint",
+        "cafe_name": "Midpoint Caf\u00e9",
+        "sector": "Sector 35",
+        "cafe_phone": "917814259209",
+        "duration": "1 Hour",
+        "slot": "Morning: 10:00 AM - 11:00 AM (1 Hr)",
+        "hours": [
+            "10:00 AM - 11:00 AM"
+        ],
+        "deal": "Free in exchange for 1 tagged Reel",
+        "confirmed_at": "2026-11-06 15:56",
+        "status": "Confirmed & Locked on Collab\u00e9 \ud83d\udd12"
+    },
+    {
+        "booking_id": "CLB_1106_155853",
+        "creator_id": "creator_sandeep",
+        "creator_name": "sandeep",
+        "creator_handle": "@sandeep_s",
+        "creator_phone": "917814259209",
+        "cafe_id": "cafe_courtyard",
+        "cafe_name": "The Courtyard Bistro",
+        "sector": "Sector 10",
+        "cafe_phone": "917814259209",
+        "duration": "1 Hour",
+        "slot": "Afternoon: 03:00 PM - 04:00 PM (1 Hr)",
+        "hours": [
+            "03:00 PM - 04:00 PM"
+        ],
+        "deal": "Free in exchange for 1 tagged Reel",
+        "confirmed_at": "2026-11-06 15:58",
         "status": "Confirmed & Locked on Collab\u00e9 \ud83d\udd12"
     }
 ]
