@@ -297,7 +297,7 @@ INITIAL_CAFES = [
         "has_natural_light": True,
         "allowed_shoots": ["Food & Beverage", "Fashion & Lifestyle", "UGC / Brand Content"],
         "deal_type": "Free in exchange for 1 tagged Reel",
-        "manager_phone": "917814259209"
+        "manager_phone": "919872345112"
     },
     {
         "id": "cafe_midpoint",
@@ -313,7 +313,7 @@ INITIAL_CAFES = [
         "has_natural_light": True,
         "allowed_shoots": ["Food & Beverage", "Fashion & Lifestyle", "UGC / Brand Content"],
         "deal_type": "Free in exchange for 1 tagged Reel",
-        "manager_phone": "917814259209"
+        "manager_phone": "919814056789"
     },
     {
         "id": "cafe_courtyard",
@@ -329,7 +329,7 @@ INITIAL_CAFES = [
         "has_natural_light": True,
         "allowed_shoots": ["Food & Beverage", "Fashion & Lifestyle", "UGC / Brand Content"],
         "deal_type": "Free in exchange for 1 tagged Reel",
-        "manager_phone": "917814259209"
+        "manager_phone": "918837686678"
     },
     {
         "id": "cafe_willow",
@@ -345,7 +345,7 @@ INITIAL_CAFES = [
         "has_natural_light": True,
         "allowed_shoots": ["Food & Beverage", "Fashion & Lifestyle", "UGC / Brand Content"],
         "deal_type": "Free in exchange for 1 tagged Reel",
-        "manager_phone": "917814259209"
+        "manager_phone": "919876543210"
     },
     {
         "id": "cafe_bluetokai",
@@ -361,7 +361,7 @@ INITIAL_CAFES = [
         "has_natural_light": True,
         "allowed_shoots": ["Food & Beverage", "UGC / Brand Content", "Product Shoot"],
         "deal_type": "Minimum spend ₹500",
-        "manager_phone": "917814259209"
+        "manager_phone": "919811234567"
     },
     {
         "id": "cafe_sec7social",
@@ -377,7 +377,7 @@ INITIAL_CAFES = [
         "has_natural_light": True,
         "allowed_shoots": ["Fashion & Lifestyle", "Music / Commercial", "Product Shoot"],
         "deal_type": "Hourly fee ₹800/hr",
-        "manager_phone": "917814259209"
+        "manager_phone": "919877654321"
     }
 ]
 
@@ -388,7 +388,7 @@ INITIAL_CREATORS = [
         "name": "Aman",
         "handle": "@Aman_Kaur",
         "followers": "28K",
-        "whatsapp": "917814259209",
+        "whatsapp": "919501610083",
         "shoot_type": "Food & Beverage",
         "description": "wants good food to eat and wanna make reels",
         "preferred_sector": "Sector 35",
@@ -410,7 +410,7 @@ INITIAL_CREATORS = [
         "name": "Raman",
         "handle": "@_ramansingh",
         "followers": "35K",
-        "whatsapp": "917814259209",
+        "whatsapp": "916283457545",
         "shoot_type": "Lifestyle",
         "description": "wants good view",
         "preferred_sector": "Sector 35",
@@ -431,7 +431,7 @@ INITIAL_CREATORS = [
         "name": "sandeep",
         "handle": "@sandeep_s",
         "followers": "42K",
-        "whatsapp": "917814259209",
+        "whatsapp": "919876123450",
         "shoot_type": "Content Creator",
         "description": "something good",
         "preferred_sector": "Sector 10",
@@ -452,7 +452,7 @@ INITIAL_CREATORS = [
         "name": "Arsh",
         "handle": "@Arshdeep_",
         "followers": "19K",
-        "whatsapp": "918837686678",
+        "whatsapp": "919878241560",
         "shoot_type": "Fashion & Lifestyle",
         "description": "Brand lookbook shoot with 5 models and clothing changes",
         "preferred_sector": "Sector 10",
@@ -473,7 +473,7 @@ INITIAL_CREATORS = [
         "name": "Mukesh",
         "handle": "@_mukeshKumar",
         "followers": "51K",
-        "whatsapp": "918146211111",
+        "whatsapp": "919815043892",
         "shoot_type": "Food & Beverage",
         "description": "Food review reel with 2 crew members",
         "preferred_sector": "Sector 35",
@@ -500,11 +500,11 @@ INITIAL_BOOKINGS = [
         "creator_id": "creator_aman",
         "creator_name": "Aman",
         "creator_handle": "@Aman_Kaur",
-        "creator_phone": "917814259209",
+        "creator_phone": "919501610083",
         "cafe_id": "cafe_thirdwave",
         "cafe_name": "Third Wave Coffee",
         "sector": "Sector 35",
-        "cafe_phone": "917814259209",
+        "cafe_phone": "919872345112",
         "duration": "2 Hours",
         "slot": "Afternoon: 12:00 PM - 02:00 PM (2 Hrs)",
         "hours": [
@@ -520,11 +520,11 @@ INITIAL_BOOKINGS = [
         "creator_id": "creator_raman",
         "creator_name": "Raman",
         "creator_handle": "@_ramansingh",
-        "creator_phone": "917814259209",
+        "creator_phone": "916283457545",
         "cafe_id": "cafe_midpoint",
         "cafe_name": "Midpoint Café",
         "sector": "Sector 35",
-        "cafe_phone": "917814259209",
+        "cafe_phone": "919814056789",
         "duration": "1 Hour",
         "slot": "Morning: 10:00 AM - 11:00 AM (1 Hr)",
         "hours": [
@@ -539,11 +539,11 @@ INITIAL_BOOKINGS = [
         "creator_id": "creator_sandeep",
         "creator_name": "sandeep",
         "creator_handle": "@sandeep_s",
-        "creator_phone": "917814259209",
+        "creator_phone": "919876123450",
         "cafe_id": "cafe_courtyard",
         "cafe_name": "The Courtyard Bistro",
         "sector": "Sector 10",
-        "cafe_phone": "917814259209",
+        "cafe_phone": "918837686678",
         "duration": "1 Hour",
         "slot": "Afternoon: 03:00 PM - 04:00 PM (1 Hr)",
         "hours": [
